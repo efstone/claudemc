@@ -1,0 +1,21 @@
+[Unit]
+Description=Jarvis Minecraft Chat Watcher
+After=network.target
+
+[Service]
+Type=simple
+User=efstone
+Group=efstone
+WorkingDirectory=/Users/efstone/PycharmProjects/claudemc
+Environment="PATH=/Users/efstone/PycharmProjects/claudemc/.venv/bin"
+ExecStart=/Users/efstone/PycharmProjects/claudemc/.venv/bin/python manage.py watch_chat
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jarvis-chat
+
+[Install]
+WantedBy=multi-user.target

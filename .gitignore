@@ -1,0 +1,25 @@
+# Environment and secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+
+# Django
+db.sqlite3
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# macOS
+.DS_Store
+
+# Claude Code / MCP
+.claude/
+.mcp.json
