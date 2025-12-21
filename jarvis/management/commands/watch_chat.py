@@ -52,15 +52,22 @@ class Command(BaseCommand):
             f"<{message.username}> {message.content}"
         )
 
+        # Get or create the player
+        player, created = MinecraftPlayer.objects.get_or_create(
+            username=message.username
+        )
+        if created:
+            self.stdout.write(self.style.NOTICE(f'  -> New player: {message.username}'))
+
         # Save to database
         ChatMessage.objects.create(
-            username=message.username,
+            player=player,
             content=message.content,
             timestamp=message.timestamp
         )
 
         # Check if user is in Jarvis group
-        if not self.is_jarvis_user(message.username):
+        if not player.is_jarvis_user():
             return
 
         # Send to Claude and process response
@@ -75,14 +82,6 @@ class Command(BaseCommand):
 
         except Exception as e:
             self.stderr.write(self.style.ERROR(f'  -> Claude error: {e}'))
-
-    def is_jarvis_user(self, username: str) -> bool:
-        """Check if a Minecraft username is linked to a Jarvis group user."""
-        try:
-            player = MinecraftPlayer.objects.get(username=username)
-            return player.is_jarvis_user()
-        except MinecraftPlayer.DoesNotExist:
-            return False
 
     def execute_tool(self, tool_call: ToolCall, requesting_user: str):
         """Execute a tool call from Claude."""

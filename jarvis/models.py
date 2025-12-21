@@ -3,23 +3,37 @@ from django.db import models
 
 
 class MinecraftPlayer(models.Model):
-    """Links a Minecraft username to a Django User for permissions."""
+    """Links a Minecraft username to an optional Django User for permissions."""
 
     username = models.CharField(max_length=16, unique=True)  # MC username
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='minecraft_player')
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='minecraft_player'
+    )
 
     def is_jarvis_user(self) -> bool:
         """Check if this player's Django user is in the Jarvis group."""
+        if self.user is None:
+            return False
         return self.user.groups.filter(name='Jarvis').exists()
 
     def __str__(self):
-        return f"{self.username} ({self.user.username})"
+        if self.user:
+            return f"{self.username} ({self.user.username})"
+        return self.username
 
 
 class ChatMessage(models.Model):
     """A chat message from the Minecraft server."""
 
-    username = models.CharField(max_length=16, db_index=True)  # MC usernames max 16 chars
+    player = models.ForeignKey(
+        MinecraftPlayer,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
     content = models.TextField()
     timestamp = models.DateTimeField(db_index=True)
 
@@ -27,4 +41,4 @@ class ChatMessage(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        return f"<{self.username}> {self.content[:50]}"
+        return f"<{self.player.username}> {self.content[:50]}"
