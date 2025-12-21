@@ -1,22 +1,28 @@
 [Unit]
-Description=Jarvis Minecraft Chat Watcher
+Description=Gunicorn daemon for claudemc Django app
 After=network.target
 
 [Service]
-Type=simple
+Type=notify
 User=efstone
 Group=efstone
+RuntimeDirectory=gunicorn
 WorkingDirectory=/home/efstone/PycharmProjects/claudemc
 Environment="PATH=/home/efstone/PycharmProjects/claudemc/.venv/bin"
 EnvironmentFile=/home/efstone/PycharmProjects/claudemc/.env
-ExecStart=/home/efstone/PycharmProjects/claudemc/.venv/bin/python manage.py watch_chat
-Restart=always
+ExecStart=/home/efstone/PycharmProjects/claudemc/.venv/bin/gunicorn \
+    --workers 2 \
+    --bind unix:/run/gunicorn/claudemc.sock \
+    --access-logfile - \
+    --error-logfile - \
+    claudemc.wsgi:application
+Restart=on-failure
 RestartSec=5
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=jarvis-chat
+SyslogIdentifier=gunicorn
 
 [Install]
 WantedBy=multi-user.target

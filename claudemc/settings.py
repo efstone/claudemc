@@ -31,6 +31,12 @@ CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
 
 ALLOWED_HOSTS = ['localhost', '192.168.42.123', '127.0.0.1']
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8080',
+    'http://127.0.0.1:8080',
+    'http://192.168.42.123:8080',
+]
+
 
 # Application definition
 
@@ -126,3 +132,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'

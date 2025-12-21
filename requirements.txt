@@ -1,6 +1,7 @@
 anthropic==0.40.0
 asgiref==3.11.0
 Django==5.2
+gunicorn==23.0.0
 mcrcon==0.7.0
 python-dotenv==1.0.1
 sqlparse==0.5.5
