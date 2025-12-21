@@ -29,7 +29,7 @@ RCON_PASSWORD = os.getenv('RCON_PASSWORD', '')
 # Anthropic API
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
 
-ALLOWED_HOSTS = ['localhost', '192.168.42.123']
+ALLOWED_HOSTS = ['localhost', '192.168.42.123', '127.0.0.1']
 
 
 # Application definition
