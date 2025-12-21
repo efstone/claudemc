@@ -57,7 +57,7 @@ class Location(models.Model):
     x = models.IntegerField()
     y = models.IntegerField()
     z = models.IntegerField()
-    description = models.CharField(max_length=100, blank=True)  # Optional description
+    description = models.CharField(max_length=300, blank=True)  # Optional description
 
     class Meta:
         ordering = ['name']
