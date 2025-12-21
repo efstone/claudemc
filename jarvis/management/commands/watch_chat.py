@@ -67,11 +67,15 @@ class Command(BaseCommand):
         )
 
         # Check if user is in Jarvis group
-        if not player.is_jarvis_user():
+        is_jarvis = player.is_jarvis_user()
+        self.stdout.write(f'  -> Jarvis group: {is_jarvis} (user: {player.user})')
+        if not is_jarvis:
             return
 
         # Only respond if message mentions Jarvis
-        if 'jarvis' not in message.content.lower():
+        has_jarvis_mention = 'jarvis' in message.content.lower()
+        self.stdout.write(f'  -> Contains "jarvis": {has_jarvis_mention}')
+        if not has_jarvis_mention:
             return
 
         # Send to Claude and process response
@@ -79,6 +83,10 @@ class Command(BaseCommand):
 
         try:
             response = claude_chat(message.username, message.content)
+
+            # Log Claude's response
+            self.stdout.write(self.style.HTTP_INFO(f'  -> Claude text: {response.text}'))
+            self.stdout.write(self.style.HTTP_INFO(f'  -> Claude tools: {len(response.tool_calls)} call(s)'))
 
             # Execute any tool calls
             for tool_call in response.tool_calls:

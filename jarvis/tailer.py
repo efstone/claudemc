@@ -31,7 +31,7 @@ def tail_chat(log_path: Optional[str] = None) -> Iterator[ChatMessage]:
         log_path = settings.MINECRAFT_LOG_PATH
 
     proc = subprocess.Popen(
-        ['tail', '-F', log_path],
+        ['tail', '-F', '-n', '0', log_path],  # -n 0: start at end, don't read existing lines
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True
