@@ -69,3 +69,40 @@ class Location(models.Model):
     def coordinates(self) -> str:
         """Return coordinates as a string for RCON."""
         return f"{self.x} {self.y} {self.z}"
+
+
+class ClaudeResponse(models.Model):
+    """A response from Claude to a user's message."""
+
+    username = models.CharField(max_length=16)  # Who triggered this response
+    prompt = models.TextField()  # The user's message
+    response_text = models.TextField(blank=True, null=True)  # Claude's text response
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        text_preview = (self.response_text or '')[:50]
+        return f"[{self.username}] {text_preview}"
+
+
+class ToolExecution(models.Model):
+    """A tool call executed as part of a Claude response."""
+
+    response = models.ForeignKey(
+        ClaudeResponse,
+        on_delete=models.CASCADE,
+        related_name='tool_executions'
+    )
+    tool_name = models.CharField(max_length=50)  # say, give, tp, etc.
+    arguments = models.JSONField()  # Tool arguments
+    rcon_result = models.TextField(blank=True, null=True)  # RCON response
+    success = models.BooleanField(default=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.tool_name}({self.arguments})"

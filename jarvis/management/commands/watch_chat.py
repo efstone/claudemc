@@ -9,10 +9,11 @@ import signal
 import sys
 
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from jarvis.claude import chat as claude_chat, ToolCall
 from jarvis.commands import CommandNotAllowedError
-from jarvis.models import ChatMessage, MinecraftPlayer
+from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
 from jarvis.rcon import say, give, teleport, RconError
 from jarvis.tailer import tail_chat
 
@@ -92,51 +93,86 @@ class Command(BaseCommand):
             self.stdout.write(self.style.HTTP_INFO(f'  -> Claude text: {response.text}'))
             self.stdout.write(self.style.HTTP_INFO(f'  -> Claude tools: {len(response.tool_calls)} call(s)'))
 
+            # Save Claude's response to database
+            claude_response = ClaudeResponse.objects.create(
+                username=message.username,
+                prompt=message.content,
+                response_text=response.text
+            )
+
+            # Also save as a ChatMessage from "Jarvis" for timeline view
+            if response.text:
+                jarvis_player, _ = MinecraftPlayer.objects.get_or_create(
+                    username='Jarvis'
+                )
+                ChatMessage.objects.create(
+                    player=jarvis_player,
+                    content=response.text,
+                    timestamp=timezone.now()
+                )
+
             # Execute any tool calls
             for tool_call in response.tool_calls:
-                self.execute_tool(tool_call, message.username)
+                self.execute_tool(tool_call, message.username, claude_response)
 
         except Exception as e:
             self.stderr.write(self.style.ERROR(f'  -> Claude error: {e}'))
 
-    def execute_tool(self, tool_call: ToolCall, requesting_user: str):
-        """Execute a tool call from Claude."""
+    def execute_tool(self, tool_call: ToolCall, requesting_user: str, claude_response: ClaudeResponse):
+        """Execute a tool call from Claude and log it."""
         self.stdout.write(
             self.style.WARNING(f'  -> Executing: {tool_call.name}({tool_call.arguments})')
         )
 
+        rcon_result = None
+        success = True
+
         try:
             if tool_call.name == 'say':
-                response = say(tool_call.arguments['message'])
+                rcon_result = say(tool_call.arguments['message'])
             elif tool_call.name == 'give':
-                response = give(
+                rcon_result = give(
                     tool_call.arguments['player'],
                     tool_call.arguments['item'],
                     tool_call.arguments.get('amount', 1)
                 )
             elif tool_call.name == 'tp':
-                response = teleport(
+                rcon_result = teleport(
                     tool_call.arguments['player'],
                     tool_call.arguments['destination']
                 )
             else:
                 self.stderr.write(self.style.ERROR(f'  -> Unknown tool: {tool_call.name}'))
-                return
+                success = False
 
-            if response:
+            if rcon_result:
                 # Check for common error patterns in RCON response
                 error_patterns = ['unknown', 'invalid', 'error', 'failed', 'could not', 'no player']
-                is_error = any(pattern in response.lower() for pattern in error_patterns)
+                is_error = any(pattern in rcon_result.lower() for pattern in error_patterns)
 
                 if is_error:
-                    self.stderr.write(self.style.ERROR(f'  -> RCON error: {response}'))
+                    self.stderr.write(self.style.ERROR(f'  -> RCON error: {rcon_result}'))
+                    success = False
                 else:
-                    self.stdout.write(self.style.SUCCESS(f'  -> RCON response: {response}'))
+                    self.stdout.write(self.style.SUCCESS(f'  -> RCON response: {rcon_result}'))
 
         except CommandNotAllowedError as e:
             self.stderr.write(self.style.ERROR(f'  -> Command blocked: {e}'))
+            rcon_result = str(e)
+            success = False
         except RconError as e:
             self.stderr.write(self.style.ERROR(f'  -> RCON error: {e}'))
+            rcon_result = str(e)
+            success = False
+
+        # Log the tool execution
+        ToolExecution.objects.create(
+            response=claude_response,
+            tool_name=tool_call.name,
+            arguments=tool_call.arguments,
+            rcon_result=rcon_result,
+            success=success
+        )
 
     def shutdown(self, signum, frame):
         """Handle shutdown signals gracefully."""
