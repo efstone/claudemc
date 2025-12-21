@@ -21,6 +21,14 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 # Minecraft server log path
 MINECRAFT_LOG_PATH = os.getenv('MINECRAFT_LOG_PATH', '')
 
+# RCON settings
+RCON_HOST = os.getenv('RCON_HOST', 'localhost')
+RCON_PORT = int(os.getenv('RCON_PORT', '25575'))
+RCON_PASSWORD = os.getenv('RCON_PASSWORD', '')
+
+# Anthropic API
+CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
+
 ALLOWED_HOSTS = ['localhost', '192.168.42.123']
 
 
