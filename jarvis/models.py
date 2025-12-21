@@ -39,6 +39,12 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['player', 'timestamp', 'content'],
+                name='unique_chat_message'
+            )
+        ]
 
     def __str__(self):
         return f"<{self.player.username}> {self.content[:50]}"

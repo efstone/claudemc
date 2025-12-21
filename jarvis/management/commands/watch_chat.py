@@ -59,12 +59,15 @@ class Command(BaseCommand):
         if created:
             self.stdout.write(self.style.NOTICE(f'  -> New player: {message.username}'))
 
-        # Save to database
-        ChatMessage.objects.create(
+        # Save to database (skip duplicates)
+        chat_msg, created = ChatMessage.objects.get_or_create(
             player=player,
             content=message.content,
             timestamp=message.timestamp
         )
+        if not created:
+            self.stdout.write(self.style.WARNING(f'  -> Duplicate, skipping'))
+            return
 
         # Check if user is in Jarvis group
         is_jarvis = player.is_jarvis_user()
