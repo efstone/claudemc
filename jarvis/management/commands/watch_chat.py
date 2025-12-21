@@ -70,6 +70,10 @@ class Command(BaseCommand):
         if not player.is_jarvis_user():
             return
 
+        # Only respond if message mentions Jarvis
+        if 'jarvis' not in message.content.lower():
+            return
+
         # Send to Claude and process response
         self.stdout.write(self.style.HTTP_INFO(f'  -> Sending to Claude...'))
 
@@ -108,7 +112,14 @@ class Command(BaseCommand):
                 return
 
             if response:
-                self.stdout.write(self.style.SUCCESS(f'  -> RCON response: {response}'))
+                # Check for common error patterns in RCON response
+                error_patterns = ['unknown', 'invalid', 'error', 'failed', 'could not', 'no player']
+                is_error = any(pattern in response.lower() for pattern in error_patterns)
+
+                if is_error:
+                    self.stderr.write(self.style.ERROR(f'  -> RCON error: {response}'))
+                else:
+                    self.stdout.write(self.style.SUCCESS(f'  -> RCON response: {response}'))
 
         except CommandNotAllowedError as e:
             self.stderr.write(self.style.ERROR(f'  -> Command blocked: {e}'))
