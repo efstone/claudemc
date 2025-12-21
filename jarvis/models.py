@@ -48,3 +48,24 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"<{self.player.username}> {self.content[:50]}"
+
+
+class Location(models.Model):
+    """A named location for teleportation."""
+
+    name = models.CharField(max_length=50, unique=True)  # e.g., "spawn", "shop"
+    x = models.IntegerField()
+    y = models.IntegerField()
+    z = models.IntegerField()
+    description = models.CharField(max_length=100, blank=True)  # Optional description
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.x}, {self.y}, {self.z})"
+
+    @property
+    def coordinates(self) -> str:
+        """Return coordinates as a string for RCON."""
+        return f"{self.x} {self.y} {self.z}"

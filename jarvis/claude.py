@@ -11,6 +11,8 @@ import anthropic
 
 from django.conf import settings
 
+from .models import Location
+
 
 # Tool definitions for Claude
 MINECRAFT_TOOLS = [
@@ -71,7 +73,7 @@ MINECRAFT_TOOLS = [
     }
 ]
 
-SYSTEM_PROMPT = """You are Jarvis, a helpful AI assistant for a Minecraft server. Players can chat with you in-game.
+SYSTEM_PROMPT_BASE = """You are Jarvis, a helpful AI assistant for a Minecraft server. Players can chat with you in-game.
 
 You have access to the following commands:
 - say: Send a message to all players
@@ -87,6 +89,21 @@ Guidelines:
 - You can be playful and fun - this is a game after all!
 
 The player's username will be provided with each message."""
+
+
+def build_system_prompt() -> str:
+    """Build the system prompt with current locations from database."""
+    prompt = SYSTEM_PROMPT_BASE
+
+    locations = Location.objects.all()
+    if locations:
+        prompt += "\n\nKnown locations you can teleport players to (use fuzzy matching - "
+        prompt += "'lighthouse' matches 'Mine Island: Lighthouse Station'):"
+        for loc in locations:
+            desc = f" - {loc.description}" if loc.description else ""
+            prompt += f"\n- {loc.name}: {loc.coordinates}{desc}"
+
+    return prompt
 
 
 @dataclass
@@ -132,7 +149,7 @@ def chat(username: str, message: str, conversation_history: list = None) -> Clau
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
-        system=SYSTEM_PROMPT,
+        system=build_system_prompt(),
         tools=MINECRAFT_TOOLS,
         messages=messages
     )

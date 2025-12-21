@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import MinecraftPlayer, ChatMessage
+from .models import MinecraftPlayer, ChatMessage, Location
 
 
 @admin.register(MinecraftPlayer)
@@ -26,3 +26,10 @@ class ChatMessageAdmin(admin.ModelAdmin):
     def short_content(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
     short_content.short_description = 'Message'
+
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'x', 'y', 'z', 'description')
+    search_fields = ('name', 'description')
+    ordering = ('name',)
