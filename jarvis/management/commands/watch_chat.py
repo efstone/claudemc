@@ -130,6 +130,15 @@ class Command(BaseCommand):
         try:
             if tool_call.name == 'say':
                 rcon_result = say(tool_call.arguments['message'])
+                # Log say messages as ChatMessages from Jarvis
+                jarvis_player, _ = MinecraftPlayer.objects.get_or_create(
+                    username='Jarvis'
+                )
+                ChatMessage.objects.create(
+                    player=jarvis_player,
+                    content=tool_call.arguments['message'],
+                    timestamp=timezone.now()
+                )
             elif tool_call.name == 'give':
                 rcon_result = give(
                     tool_call.arguments['player'],
