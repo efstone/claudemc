@@ -8,7 +8,6 @@ class MinecraftPlayerAdmin(admin.ModelAdmin):
     list_display = ('username', 'user', 'is_jarvis_user')
     list_filter = ('user__groups',)
     search_fields = ('username', 'user__username')
-    raw_id_fields = ('user',)
 
     def is_jarvis_user(self, obj):
         return obj.is_jarvis_user()
