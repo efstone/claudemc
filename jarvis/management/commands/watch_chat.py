@@ -52,9 +52,10 @@ class Command(BaseCommand):
             f"<{message.username}> {message.content}"
         )
 
-        # Get or create the player
+        # Get or create the player (case-insensitive lookup)
         player, created = MinecraftPlayer.objects.get_or_create(
-            username=message.username
+            username__iexact=message.username,
+            defaults={'username': message.username}
         )
         if created:
             self.stdout.write(self.style.NOTICE(f'  -> New player: {message.username}'))

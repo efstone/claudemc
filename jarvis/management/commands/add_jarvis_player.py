@@ -1,17 +1,17 @@
 """
-Management command to create a Jarvis-enabled player.
+Management command to enable Jarvis for a player.
 
 Usage:
     python manage.py add_jarvis_player <username>
 """
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
-from jarvis.utils import create_jarvis_player
+from jarvis.utils import enable_jarvis_player
 
 
 class Command(BaseCommand):
-    help = 'Create a Django user, MinecraftPlayer, and add to Jarvis group'
+    help = 'Enable Jarvis access for a player (creates user/player if needed)'
 
     def add_arguments(self, parser):
         parser.add_argument('username', type=str, help='Minecraft username')
@@ -19,10 +19,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         username = options['username']
 
-        try:
-            player = create_jarvis_player(username)
-            self.stdout.write(self.style.SUCCESS(
-                f"Created Jarvis player: {player.username} (user: {player.user.username})"
-            ))
-        except ValueError as e:
-            raise CommandError(str(e))
+        player = enable_jarvis_player(username)
+        self.stdout.write(self.style.SUCCESS(
+            f"Enabled Jarvis for: {player.username} (user: {player.user.username})"
+        ))
