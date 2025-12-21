@@ -45,10 +45,29 @@ def send_command(command: str, validate: bool = True) -> str:
 
 
 def say(message: str) -> str:
-    """Send a chat message to the server."""
+    """Send a chat message to the server. Splits long messages automatically."""
     # Sanitize message - remove any command injection attempts
     safe_message = message.replace('"', "'").replace('\n', ' ')
-    return send_command(f'say {safe_message}')
+
+    # Minecraft limit is 256 chars total, "say " prefix is 4 chars, leave buffer
+    max_length = 240
+    responses = []
+
+    # Split into chunks if too long
+    while safe_message:
+        chunk = safe_message[:max_length]
+        safe_message = safe_message[max_length:]
+
+        # Try to break at a space if there's more to send
+        if safe_message and ' ' in chunk:
+            last_space = chunk.rfind(' ')
+            if last_space > max_length // 2:  # Only break if space is in latter half
+                safe_message = chunk[last_space+1:] + safe_message
+                chunk = chunk[:last_space]
+
+        responses.append(send_command(f'say {chunk}'))
+
+    return ' | '.join(responses) if responses else ''
 
 
 def give(player: str, item: str, amount: int = 1) -> str:
