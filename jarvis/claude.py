@@ -11,7 +11,7 @@ import anthropic
 
 from django.conf import settings
 
-from .models import Location
+from .models import Location, ClaudeResponse as ClaudeResponseModel
 
 
 # Web search tool
@@ -132,22 +132,66 @@ def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
 
 
-def chat(username: str, message: str, conversation_history: list = None) -> ClaudeResponse:
+def get_recent_history(limit: int = 7) -> list:
+    """
+    Load recent conversation history from the database.
+
+    Returns a list of message dicts for the Anthropic API.
+    """
+    recent = ClaudeResponseModel.objects.order_by('-timestamp')[:limit]
+    # Reverse to get chronological order
+    recent = list(reversed(recent))
+
+    messages = []
+    for response in recent:
+        # Add the user's prompt
+        messages.append({
+            "role": "user",
+            "content": f"[{response.username}]: {response.prompt}"
+        })
+
+        # Build assistant response (text + tool calls summary)
+        assistant_content = []
+
+        if response.response_text:
+            assistant_content.append(response.response_text)
+
+        # Summarize tool calls
+        for tool_exec in response.tool_executions.all():
+            args = tool_exec.arguments
+            if tool_exec.tool_name == 'tp':
+                assistant_content.append(f"[Teleported {args.get('player')} to {args.get('destination')}]")
+            elif tool_exec.tool_name == 'give':
+                assistant_content.append(f"[Gave {args.get('player')} {args.get('amount', 1)}x {args.get('item')}]")
+            elif tool_exec.tool_name == 'say':
+                assistant_content.append(f"[Said: {args.get('message')}]")
+
+        if assistant_content:
+            messages.append({
+                "role": "assistant",
+                "content": " ".join(assistant_content)
+            })
+
+    return messages
+
+
+def chat(username: str, message: str) -> ClaudeResponse:
     """
     Send a chat message to Claude and get a response.
+
+    Automatically includes recent conversation history for context.
 
     Args:
         username: The Minecraft player's username.
         message: The chat message from the player.
-        conversation_history: Optional list of previous messages for context.
 
     Returns:
         ClaudeResponse with text and any tool calls.
     """
     client = get_client()
 
-    # Build messages
-    messages = conversation_history or []
+    # Build messages with recent history
+    messages = get_recent_history(limit=7)
     messages.append({
         "role": "user",
         "content": f"[{username}]: {message}"
