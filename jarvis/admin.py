@@ -42,9 +42,34 @@ class ToolExecutionInline(admin.TabularInline):
     can_delete = False
 
 
+@admin.register(ToolExecution)
+class ToolExecutionAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'tool_name', 'get_username', 'short_arguments', 'short_result', 'success')
+    list_filter = ('tool_name', 'success', 'timestamp')
+    search_fields = ('response__username', 'arguments', 'rcon_result')
+    date_hierarchy = 'timestamp'
+    ordering = ('-timestamp',)
+    readonly_fields = ('response', 'tool_name', 'arguments', 'rcon_result', 'success', 'timestamp')
+
+    def get_username(self, obj):
+        return obj.response.username
+    get_username.short_description = 'Player'
+    get_username.admin_order_field = 'response__username'
+
+    def short_arguments(self, obj):
+        args_str = str(obj.arguments)
+        return args_str[:60] + '...' if len(args_str) > 60 else args_str
+    short_arguments.short_description = 'Arguments'
+
+    def short_result(self, obj):
+        result = obj.rcon_result or ''
+        return result[:40] + '...' if len(result) > 40 else result
+    short_result.short_description = 'RCON Result'
+
+
 @admin.register(ClaudeResponse)
 class ClaudeResponseAdmin(admin.ModelAdmin):
-    list_display = ('timestamp', 'username', 'short_prompt', 'short_response', 'tool_count')
+    list_display = ('timestamp', 'username', 'short_prompt', 'tools_summary')
     list_filter = ('username', 'timestamp')
     search_fields = ('username', 'prompt', 'response_text')
     date_hierarchy = 'timestamp'
@@ -56,11 +81,24 @@ class ClaudeResponseAdmin(admin.ModelAdmin):
         return obj.prompt[:50] + '...' if len(obj.prompt) > 50 else obj.prompt
     short_prompt.short_description = 'Prompt'
 
-    def short_response(self, obj):
-        text = obj.response_text or ''
-        return text[:50] + '...' if len(text) > 50 else text
-    short_response.short_description = 'Response'
+    def tools_summary(self, obj):
+        """Show actual tool calls in the list view."""
+        executions = obj.tool_executions.all()
+        if not executions:
+            return '-'
 
-    def tool_count(self, obj):
-        return obj.tool_executions.count()
-    tool_count.short_description = 'Tools'
+        summaries = []
+        for ex in executions:
+            args = ex.arguments
+            if ex.tool_name == 'tp':
+                summaries.append(f"tp {args.get('player', '?')} → {args.get('destination', '?')[:30]}")
+            elif ex.tool_name == 'give':
+                summaries.append(f"give {args.get('player', '?')} {args.get('item', '?')} x{args.get('amount', 1)}")
+            elif ex.tool_name == 'say':
+                msg = args.get('message', '')[:40]
+                summaries.append(f'say "{msg}..."' if len(args.get('message', '')) > 40 else f'say "{msg}"')
+            else:
+                summaries.append(f"{ex.tool_name}(...)")
+
+        return ' | '.join(summaries)
+    tools_summary.short_description = 'Tool Calls'
