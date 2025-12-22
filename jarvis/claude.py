@@ -14,6 +14,13 @@ from django.conf import settings
 from .models import Location
 
 
+# Web search tool
+WEB_SEARCH_TOOL = {
+    "type": "web_search_20250305",
+    "name": "web_search",
+    "max_uses": 3
+}
+
 # Tool definitions for Claude
 MINECRAFT_TOOLS = [
     {
@@ -150,7 +157,7 @@ def chat(username: str, message: str, conversation_history: list = None) -> Clau
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
         system=build_system_prompt(),
-        tools=MINECRAFT_TOOLS,
+        tools=MINECRAFT_TOOLS + [WEB_SEARCH_TOOL],
         messages=messages
     )
 
