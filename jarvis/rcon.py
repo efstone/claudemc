@@ -43,6 +43,8 @@ def send_command(command: str, validate: bool = True) -> str:
             port=settings.RCON_PORT
         ) as mcr:
             response = mcr.command(command)
+            print(f"  -> RCON sent: {command}")
+            print(f"  -> RCON response: {repr(response)}")
             return response
     except Exception as e:
         raise RconError(f"RCON error: {e}") from e
@@ -119,10 +121,7 @@ def get_player_position(player: str) -> Optional[PlayerPosition]:
         position = parse_position_from_rcon(response)
 
         if position is None:
-            return None
-
-        # Verify it's for the correct player (case-insensitive)
-        if position.username.lower() != player.lower():
+            print(f"  -> DEBUG: Failed to parse position from response")
             return None
 
         return position
