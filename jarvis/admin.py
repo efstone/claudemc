@@ -2,6 +2,8 @@ from django.contrib import admin
 
 from .models import MinecraftPlayer, ChatMessage, Location, ClaudeResponse, ToolExecution
 
+admin.site.site_header = 'KnapiksRule administration'
+
 
 @admin.register(MinecraftPlayer)
 class MinecraftPlayerAdmin(admin.ModelAdmin):
