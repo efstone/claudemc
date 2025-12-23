@@ -2,8 +2,6 @@
 RCON client for communicating with the Minecraft server.
 """
 
-import subprocess
-import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -12,7 +10,7 @@ from mcrcon import MCRcon
 from django.conf import settings
 
 from .commands import validate_command, CommandNotAllowedError
-from .parsers import parse_player_position, PlayerPosition
+from .parsers import parse_position_from_rcon, PlayerPosition
 
 
 class RconError(Exception):
@@ -103,10 +101,9 @@ def weather(precipitation: str, duration: str = None) -> str:
 
 def get_player_position(player: str) -> Optional[PlayerPosition]:
     """
-    Get a player's current position by querying entity data and reading the log.
+    Get a player's current position by querying entity data via RCON.
 
-    Sends the data command, waits briefly, then finds the LATEST log entry
-    with coordinates that matches the player's name.
+    Sends 'data get entity <player> Pos' and parses the response directly.
 
     Args:
         player: The player's username.
@@ -114,40 +111,24 @@ def get_player_position(player: str) -> Optional[PlayerPosition]:
     Returns:
         PlayerPosition if found, None otherwise.
     """
-    # Send the data command to query player position
-    send_command(f'data get entity {player} Pos')
-
-    # Wait briefly for the server to process and log the response
-    time.sleep(0.5)
-
-    # Read the last N lines of the log file
-    log_path = settings.MINECRAFT_LOG_PATH
     try:
-        result = subprocess.run(
-            ['tail', '-n', '30', log_path],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        lines = result.stdout.strip().split('\n')
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return None
+        # Send the data command and get the response directly
+        response = send_command(f'data get entity {player} Pos')
 
-    # Find the LATEST position data entry matching this player
-    # Iterate from newest to oldest (reversed), return first match
-    for line in reversed(lines):
-        position = parse_player_position(line)
+        # Parse the RCON response
+        position = parse_position_from_rcon(response)
+
         if position is None:
-            continue
+            return None
 
         # Verify it's for the correct player (case-insensitive)
         if position.username.lower() != player.lower():
-            continue
+            return None
 
-        # Found the latest matching entry
         return position
 
-    return None
+    except RconError:
+        return None
 
 
 @dataclass

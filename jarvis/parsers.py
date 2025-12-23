@@ -34,42 +34,39 @@ CHAT_PATTERN = re.compile(
 
 @dataclass
 class PlayerPosition:
-    """Parsed player position from Minecraft log."""
+    """Parsed player position."""
     username: str
     x: int
     y: int
     z: int
-    timestamp: datetime  # timezone-aware (America/Detroit)
 
 
-# Pattern for player position data: [HH:MM:SS] [Server thread/INFO]: <player> has the following entity data: [...]
-POSITION_PATTERN = re.compile(
-    r'^\[(\d{2}:\d{2}:\d{2})\] '  # timestamp
-    r'\[Server thread/INFO\]: '  # thread info
-    r'(\w+) has the following entity data: '  # username
+# Pattern for RCON response: <player> has the following entity data: [...]
+# No timestamp prefix - this is the direct RCON response
+RCON_POSITION_PATTERN = re.compile(
+    r'^(\w+) has the following entity data: '  # username
     r'\[(.+)\]$'  # coordinate data in brackets
 )
 
 
-def parse_player_position(line: str, log_date: Optional[date] = None) -> Optional[PlayerPosition]:
+def parse_position_from_rcon(response: str) -> Optional[PlayerPosition]:
     """
-    Parse player position from a log line containing entity data.
+    Parse player position from an RCON response.
 
-    The log line looks like:
-    [HH:MM:SS] [Server thread/INFO]: username has the following entity data: [ ;3m42.865 ;9md , ;3m-17.369 ;9md , ;3m1627.268 ;9md ]
+    The RCON response looks like:
+    username has the following entity data: [ ;3m42.865 ;9md , ;3m-17.369 ;9md , ;3m1627.268 ;9md ]
 
     Args:
-        line: A single line from the Minecraft server log.
-        log_date: The date to use for the timestamp. Defaults to today.
+        response: The RCON response string from 'data get entity <player> Pos'.
 
     Returns:
-        PlayerPosition if the line contains position data, None otherwise.
+        PlayerPosition if the response contains position data, None otherwise.
     """
-    match = POSITION_PATTERN.match(line.strip())
+    match = RCON_POSITION_PATTERN.match(response.strip())
     if not match:
         return None
 
-    time_str, username, coords_raw = match.groups()
+    username, coords_raw = match.groups()
 
     # Clean up the coordinate string
     # Remove color/formatting codes: ;3m, ;9md, and extra spaces
@@ -88,19 +85,11 @@ def parse_player_position(line: str, log_date: Optional[date] = None) -> Optiona
     except (ValueError, IndexError):
         return None
 
-    # Combine time from log with provided date (or today in Eastern time)
-    if log_date is None:
-        log_date = datetime.now(EASTERN).date()
-
-    time_obj = datetime.strptime(time_str, '%H:%M:%S').time()
-    timestamp = datetime.combine(log_date, time_obj, tzinfo=EASTERN)
-
     return PlayerPosition(
         username=username,
         x=x,
         y=y,
-        z=z,
-        timestamp=timestamp
+        z=z
     )
 
 
