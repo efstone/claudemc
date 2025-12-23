@@ -223,6 +223,10 @@ def get_recent_history(limit: int = 7) -> list:
 
     messages = []
     for response in recent:
+        # Skip any response that involved save_location - we don't want Claude
+        # to see these in history, so it always calls the tool fresh
+        if response.tool_executions.filter(tool_name='save_location').exists():
+            continue
         # Add the user's prompt
         messages.append({
             "role": "user",
@@ -249,10 +253,9 @@ def get_recent_history(limit: int = 7) -> list:
             elif tool_exec.tool_name == 'weather':
                 assistant_content.append(f"[Set weather: {args.get('precipitation')}]")
             elif tool_exec.tool_name == 'save_location':
-                if tool_exec.success:
-                    assistant_content.append(f"[Saved location: {args.get('name')}]")
-                else:
-                    assistant_content.append(f"[Failed to save location: {args.get('name')}]")
+                # Don't include save_location in history - we always want Claude to call
+                # the tool and let Python handle duplicate checking
+                pass
 
         if assistant_content:
             messages.append({
