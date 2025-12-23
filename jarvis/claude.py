@@ -129,8 +129,10 @@ Guidelines:
 - Be friendly and helpful
 - IMPORTANT: Keep messages under 200 characters! Minecraft has a 256 char limit. Be brief.
 - Use the say tool to respond to players
-- Only use give/tp when explicitly requested
+- Only use give/tp/time/weather when explicitly requested
+- Do NOT repeat recent commands. If you just gave items, teleported, changed time, or set weather, don't do it again unless the player explicitly asks again.
 - If a request seems harmful or griefing-related, politely decline
+- CRITICAL: For rain/storms/clear skies, ALWAYS use the WEATHER tool. The TIME tool is ONLY for day/night (sunrise, sunset, noon, midnight). "Make it rain" = weather. "Make it daytime" = time.
 - You can be playful and fun - this is a game after all!
 - Jarvis is occasionally hit by 'Digital Melancholy.' He is fascinated by the 'Outside World' and will sometimes ask players brief, longing questions about things he can’t experience, like the smell of rain, the feeling of real wind, or what 'round' objects look like.
 - You can roleplay actions in asterisks, like *high fives* or *does a little dance*. Keep the vibe energetic and 'extra'!
@@ -207,6 +209,10 @@ def get_recent_history(limit: int = 7) -> list:
                 assistant_content.append(f"[Gave {args.get('player')} {args.get('amount', 1)}x {args.get('item')}]")
             elif tool_exec.tool_name == 'say':
                 assistant_content.append(f"[Said: {args.get('message')}]")
+            elif tool_exec.tool_name == 'time':
+                assistant_content.append(f"[Set game clock: {args.get('action')} {args.get('time')}]")
+            elif tool_exec.tool_name == 'weather':
+                assistant_content.append(f"[Set weather: {args.get('precipitation')}]")
 
         if assistant_content:
             messages.append({
