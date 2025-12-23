@@ -69,9 +69,10 @@ def parse_position_from_rcon(response: str) -> Optional[PlayerPosition]:
     username, coords_raw = match.groups()
 
     # Clean up the coordinate string
-    # Remove color/formatting codes: ;3m, ;9md, and extra spaces
+    # Remove 'd' suffix (double type indicator), color codes, and spaces
     coords_clean = coords_raw
-    coords_clean = re.sub(r';[0-9]+m?d?', '', coords_clean)  # Remove ;3m, ;9md, etc.
+    coords_clean = re.sub(r'd\b', '', coords_clean)  # Remove 'd' suffix from numbers
+    coords_clean = re.sub(r';[0-9]+m?d?', '', coords_clean)  # Remove ;3m, ;9md color codes
     coords_clean = coords_clean.replace(' ', '')  # Remove spaces
 
     # Split by comma and parse as floats, then truncate to int
