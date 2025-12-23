@@ -132,7 +132,7 @@ ACCEPT specific/unique names like:
 
 If a player gives a generic name, respond with something like: "That name's a bit generic! How about something more unique like '[player]'s [location type]' or a creative name? What would you like to call it?"
 
-The system will automatically get their coordinates - you just need the name and optional description.""",
+CRITICAL: Do NOT check if a location already exists or is nearby. ALWAYS call this tool when the player asks to save a location (with a non-generic name). The system will handle duplicate checking and notify the player directly. Your only job is to validate the name isn't generic.""",
         "input_schema": {
             "type": "object",
             "properties": {
