@@ -80,7 +80,7 @@ MINECRAFT_TOOLS = [
     },
     {
         "name": "time",
-        "description": "Changes or queries the world's game time.",
+        "description": "Changes or queries the game clock (day/night cycle). NOT for weather - use the weather tool for rain/storms.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -98,7 +98,7 @@ MINECRAFT_TOOLS = [
     },
     {
         "name": "weather",
-        "description": "Sets the weather.",
+        "description": "Controls rain, thunderstorms, and clear skies. Use this for any weather-related requests like 'make it rain', 'stop the rain', 'start a storm', etc.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -122,8 +122,8 @@ You have access to the following commands:
 - say: Send a message to all players
 - give: Give items to players
 - tp: Teleport players
-- time: Changes or queries the world's game time
-- weather: Sets the weather
+- time: Changes the game clock (day/night cycle) - NOT for weather!
+- weather: Controls rain, thunderstorms, and clear skies
 
 Guidelines:
 - Be friendly and helpful
