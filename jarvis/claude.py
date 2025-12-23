@@ -177,17 +177,35 @@ Guidelines:
 The player's username will be provided with each message."""
 
 
-def build_system_prompt() -> str:
+def is_save_location_request(message: str) -> bool:
+    """
+    Detect if a message is asking to save a location.
+
+    Looks for save-related words combined with location-related words.
+    """
+    message_lower = message.lower()
+
+    save_words = {'save', 'store', 'remember', 'note', 'log', 'record', 'bookmark'}
+    location_words = {'place', 'location', 'spot', 'coordinates', 'coords', 'position', 'here'}
+
+    has_save_word = any(word in message_lower for word in save_words)
+    has_location_word = any(word in message_lower for word in location_words)
+
+    return has_save_word and has_location_word
+
+
+def build_system_prompt(include_locations: bool = True) -> str:
     """Build the system prompt with current locations from database."""
     prompt = SYSTEM_PROMPT_BASE
 
-    locations = Location.objects.all()
-    if locations:
-        prompt += "\n\nKnown locations you can teleport players to (use fuzzy matching - "
-        prompt += "'lighthouse' matches 'Mine Island: Lighthouse Station'):"
-        for loc in locations:
-            desc = f" - {loc.description}" if loc.description else ""
-            prompt += f"\n- {loc.name}: {loc.coordinates}{desc}"
+    if include_locations:
+        locations = Location.objects.all()
+        if locations:
+            prompt += "\n\nKnown locations you can teleport players to (use fuzzy matching - "
+            prompt += "'lighthouse' matches 'Mine Island: Lighthouse Station'):"
+            for loc in locations:
+                desc = f" - {loc.description}" if loc.description else ""
+                prompt += f"\n- {loc.name}: {loc.coordinates}{desc}"
 
     return prompt
 
@@ -288,10 +306,14 @@ def chat(username: str, message: str) -> ClaudeResponse:
         "content": f"[{username}]: {message}"
     })
 
+    # Don't include location list if this is a save-location request
+    # This prevents Claude from seeing existing locations and refusing to call save_location
+    include_locations = not is_save_location_request(message)
+
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
-        system=build_system_prompt(),
+        system=build_system_prompt(include_locations=include_locations),
         tools=MINECRAFT_TOOLS + [WEB_SEARCH_TOOL],
         messages=messages
     )
