@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 
 from .models import MinecraftPlayer, ChatMessage, Location, ClaudeResponse, ToolExecution
 
@@ -32,9 +33,15 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'x', 'y', 'z', 'description')
+    list_display = ('name', 'x', 'y', 'z', 'description', 'screenshot_thumbnail')
     search_fields = ('name', 'description')
     ordering = ('name',)
+
+    def screenshot_thumbnail(self, obj):
+        if obj.screenshot:
+            return format_html('<img src="{}" height="50" />', obj.screenshot.url)
+        return '-'
+    screenshot_thumbnail.short_description = 'Screenshot'
 
 
 class ToolExecutionInline(admin.TabularInline):
