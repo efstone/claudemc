@@ -78,3 +78,11 @@ def give(player: str, item: str, amount: int = 1) -> str:
 def teleport(player: str, destination: str) -> str:
     """Teleport a player to a destination (coordinates or another player)."""
     return send_command(f'tp {player} {destination}')
+
+def time(action: str, time: str) -> str:
+    """Set the world time (day/night or numerical value)"""
+    return send_command(f'time {action} {time}')
+
+def weather(precipitation: str, duration: int) -> str:
+    """Sets the world weather, ex: rain/clear/thunderstorm"""
+    return send_command(f'time {precipitation} {duration}')

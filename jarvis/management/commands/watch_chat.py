@@ -14,7 +14,7 @@ from django.utils import timezone
 from jarvis.claude import chat as claude_chat, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
-from jarvis.rcon import say, give, teleport, RconError
+from jarvis.rcon import say, give, teleport, time, weather, RconError
 from jarvis.tailer import tail_chat
 
 
