@@ -2,11 +2,17 @@
 RCON client for communicating with the Minecraft server.
 """
 
+import subprocess
+import time
+from dataclasses import dataclass
+from typing import Optional
+
 from mcrcon import MCRcon
 
 from django.conf import settings
 
 from .commands import validate_command, CommandNotAllowedError
+from .parsers import parse_player_position, PlayerPosition
 
 
 class RconError(Exception):
@@ -93,3 +99,143 @@ def weather(precipitation: str, duration: str = None) -> str:
     if duration:
         return send_command(f'weather {precipitation} {duration}')
     return send_command(f'weather {precipitation}')
+
+
+def get_player_position(player: str) -> Optional[PlayerPosition]:
+    """
+    Get a player's current position by querying entity data and reading the log.
+
+    Sends the data command, waits briefly, then finds the LATEST log entry
+    with coordinates that matches the player's name.
+
+    Args:
+        player: The player's username.
+
+    Returns:
+        PlayerPosition if found, None otherwise.
+    """
+    # Send the data command to query player position
+    send_command(f'data get entity {player} Pos')
+
+    # Wait briefly for the server to process and log the response
+    time.sleep(0.5)
+
+    # Read the last N lines of the log file
+    log_path = settings.MINECRAFT_LOG_PATH
+    try:
+        result = subprocess.run(
+            ['tail', '-n', '30', log_path],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        lines = result.stdout.strip().split('\n')
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return None
+
+    # Find the LATEST position data entry matching this player
+    # Iterate from newest to oldest (reversed), return first match
+    for line in reversed(lines):
+        position = parse_player_position(line)
+        if position is None:
+            continue
+
+        # Verify it's for the correct player (case-insensitive)
+        if position.username.lower() != player.lower():
+            continue
+
+        # Found the latest matching entry
+        return position
+
+    return None
+
+
+@dataclass
+class SaveLocationResult:
+    """Result of saving a location."""
+    success: bool
+    message: str
+    location_name: Optional[str] = None
+    coordinates: Optional[str] = None
+
+
+def save_player_location(
+    player: str,
+    name: str,
+    description: str = ''
+) -> SaveLocationResult:
+    """
+    Save a player's current location to the database.
+
+    Performs duplicate checking:
+    - Rejects if the location name already exists (case-insensitive)
+    - Rejects if a location within 10 blocks of x OR z already exists
+
+    Args:
+        player: The player's username.
+        name: The name for the location.
+        description: Optional description for the location.
+
+    Returns:
+        SaveLocationResult with success status and message.
+    """
+    from .models import Location  # Import here to avoid circular import
+
+    # Get the player's current position (latest matching entry from log)
+    position = get_player_position(player)
+    if position is None:
+        error_msg = f"Could not get position for {player}. Make sure you're in the game!"
+        say(error_msg)
+        return SaveLocationResult(success=False, message=error_msg)
+
+    # Check if location name already exists (case-insensitive)
+    existing_name = Location.objects.filter(name__iexact=name).first()
+    if existing_name:
+        error_msg = f"Location '{name}' already exists at {existing_name.coordinates}. Choose a different name!"
+        say(error_msg)
+        return SaveLocationResult(success=False, message=error_msg)
+
+    # Check for nearby locations (within 10 blocks of x OR z)
+    # This prevents saving essentially the same spot with different names
+    nearby_threshold = 10
+    for loc in Location.objects.all():
+        x_diff = abs(loc.x - position.x)
+        z_diff = abs(loc.z - position.z)
+        if x_diff <= nearby_threshold and z_diff <= nearby_threshold:
+            error_msg = (
+                f"There's already a location nearby! '{loc.name}' is at {loc.coordinates}, "
+                f"only {x_diff} blocks away in X and {z_diff} blocks away in Z. "
+                f"Move further away or use a different spot!"
+            )
+            say(error_msg)
+            return SaveLocationResult(success=False, message=error_msg)
+
+    # Create the location
+    try:
+        location = Location.objects.create(
+            name=name,
+            x=position.x,
+            y=position.y,
+            z=position.z,
+            description=description or ''
+        )
+
+        # Build success message
+        coords_str = f"{position.x} {position.y} {position.z}"
+        if description:
+            success_msg = f"Saved location '{name}' at {coords_str}. Description: {description}"
+        else:
+            success_msg = f"Saved location '{name}' at {coords_str}!"
+
+        say(success_msg)
+        return SaveLocationResult(
+            success=True,
+            message=success_msg,
+            location_name=name,
+            coordinates=coords_str
+        )
+
+    except Exception as e:
+        error_msg = f"Failed to save location: {str(e)}"
+        say(error_msg)
+        return SaveLocationResult(success=False, message=error_msg)

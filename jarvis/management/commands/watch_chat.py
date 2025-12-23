@@ -14,7 +14,7 @@ from django.utils import timezone
 from jarvis.claude import chat as claude_chat, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
-from jarvis.rcon import say, give, teleport, set_time, weather, RconError
+from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, RconError
 from jarvis.tailer import tail_chat
 
 
@@ -160,6 +160,15 @@ class Command(BaseCommand):
                     tool_call.arguments['precipitation'],
                     tool_call.arguments.get('duration')
                 )
+            elif tool_call.name == 'save_location':
+                # Save the player's current location - this handles its own RCON messaging
+                result = save_player_location(
+                    player=requesting_user,
+                    name=tool_call.arguments['name'],
+                    description=tool_call.arguments.get('description', '')
+                )
+                rcon_result = result.message
+                success = result.success
             else:
                 self.stderr.write(self.style.ERROR(f'  -> Unknown tool: {tool_call.name}'))
                 success = False

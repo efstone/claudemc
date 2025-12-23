@@ -113,6 +113,40 @@ MINECRAFT_TOOLS = [
             },
             "required": ["precipitation"]
         }
+    },
+    {
+        "name": "save_location",
+        "description": """Save the player's current location to the database. Use when a player asks to save, record, remember, or bookmark their current position/location/spot.
+
+IMPORTANT - Before calling this tool, you MUST reject generic location names and ask the player to be more specific. DO NOT call this tool if the name is generic. Instead, use 'say' to ask for a better name.
+
+REJECT these generic names (use 'say' to ask for something more specific):
+- Single words like: home, base, mine, farm, house, spawn, shop, portal, storage, castle, tower, cave, beach, island, village, mansion, temple, fortress, outpost, hub, camp, dock, bridge, lighthouse, garden, arena, market, warehouse, bunker, treehouse
+- Generic compound names like: diamond mine, iron mine, gold mine, my base, my home, the farm, main base, secret base, hidden base, tree farm, mob farm, xp farm, wheat farm, sugar cane farm, nether portal, end portal
+
+ACCEPT specific/unique names like:
+- Names with player context: "Steve's Cliffside Manor", "Alex's Ocean Monument Base"
+- Named locations: "Mount Ironpeak Mine", "Sunset Bay Docks", "The Emerald Spire"
+- Descriptive unique names: "Mushroom Island Trading Post", "Deep Ravine Diamond Dig", "Northern Ice Castle"
+- Creative names: "The Void Walker's Rest", "Redstone Research Lab Alpha"
+
+If a player gives a generic name, respond with something like: "That name's a bit generic! How about something more unique like '[player]'s [location type]' or a creative name? What would you like to call it?"
+
+The system will automatically get their coordinates - you just need the name and optional description.""",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "A SPECIFIC, UNIQUE name for the location - NOT generic words like 'home', 'base', 'mine', 'farm'"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional description of the location"
+                }
+            },
+            "required": ["name"]
+        }
     }
 ]
 
@@ -124,6 +158,7 @@ You have access to the following commands:
 - tp: Teleport players
 - time: Changes the game clock (day/night cycle) - NOT for weather!
 - weather: Controls rain, thunderstorms, and clear skies
+- save_location: Save a player's current location for future teleportation
 
 Guidelines:
 - Be friendly and helpful
@@ -213,6 +248,8 @@ def get_recent_history(limit: int = 7) -> list:
                 assistant_content.append(f"[Set game clock: {args.get('action')} {args.get('time')}]")
             elif tool_exec.tool_name == 'weather':
                 assistant_content.append(f"[Set weather: {args.get('precipitation')}]")
+            elif tool_exec.tool_name == 'save_location':
+                assistant_content.append(f"[Saved location: {args.get('name')}]")
 
         if assistant_content:
             messages.append({
