@@ -249,7 +249,10 @@ def get_recent_history(limit: int = 7) -> list:
             elif tool_exec.tool_name == 'weather':
                 assistant_content.append(f"[Set weather: {args.get('precipitation')}]")
             elif tool_exec.tool_name == 'save_location':
-                assistant_content.append(f"[Saved location: {args.get('name')}]")
+                if tool_exec.success:
+                    assistant_content.append(f"[Saved location: {args.get('name')}]")
+                else:
+                    assistant_content.append(f"[Failed to save location: {args.get('name')}]")
 
         if assistant_content:
             messages.append({
