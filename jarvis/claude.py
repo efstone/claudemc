@@ -86,11 +86,11 @@ MINECRAFT_TOOLS = [
             "properties": {
                 "action": {
                     "type": "string",
-                    "description": "Action: either 'add', 'query', or 'set'.
+                    "description": "Action: either 'add', 'query', or 'set'."
                 },
                 "time": {
                     "type": "string",
-                    "description": "The amount of time being added or set. Can be a numerical value or 'day', 'night', 'noon', 'midnight'."
+                    "description": "For 'add'/'set': a number or 'day', 'night', 'noon', 'midnight'. For 'query': must be 'day', 'daytime', or 'gametime'."
                 }
             },
             "required": ["action", "time"]
