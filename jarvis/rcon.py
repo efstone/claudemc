@@ -78,3 +78,18 @@ def give(player: str, item: str, amount: int = 1) -> str:
 def teleport(player: str, destination: str) -> str:
     """Teleport a player to a destination (coordinates or another player)."""
     return send_command(f'tp {player} {destination}')
+
+def set_time(action: str, value: str) -> str:
+    """Set or query the world time (day/night or numerical value)."""
+    return send_command(f'time {action} {value}')
+
+
+def weather(precipitation: str, duration: str = None) -> str:
+    """Set the world weather (clear/rain/thunder)."""
+    # Workaround: '/weather clear' only lasts briefly before rain returns.
+    # Starting a 1-tick thunderstorm that "ends naturally" gives longer clear weather.
+    if precipitation == 'clear':
+        return send_command('weather thunder 1')
+    if duration:
+        return send_command(f'weather {precipitation} {duration}')
+    return send_command(f'weather {precipitation}')
