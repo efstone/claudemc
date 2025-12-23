@@ -58,6 +58,7 @@ class Location(models.Model):
     y = models.IntegerField()
     z = models.IntegerField()
     description = models.CharField(max_length=300, blank=True)  # Optional description
+    screenshot = models.ImageField(upload_to='location_screenshots/', blank=True, null=True)
 
     class Meta:
         ordering = ['name']
