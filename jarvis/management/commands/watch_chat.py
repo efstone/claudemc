@@ -25,8 +25,8 @@ class Command(BaseCommand):
     help = 'Watch Minecraft server chat in real-time'
 
     # Random musing interval: 10-25 minutes (in seconds)
-    MUSING_MIN_INTERVAL = 1 * 60
-    MUSING_MAX_INTERVAL = 2 * 60
+    MUSING_MIN_INTERVAL = 10 * 60
+    MUSING_MAX_INTERVAL = 25 * 60
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
