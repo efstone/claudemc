@@ -5,21 +5,28 @@ Usage:
     python manage.py watch_chat
 """
 
+import random
 import signal
 import sys
+import threading
+import time
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from jarvis.claude import chat as claude_chat, ToolCall
+from jarvis.claude import chat as claude_chat, random_musing, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
-from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, RconError
+from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, RconError
 from jarvis.tailer import tail_chat
 
 
 class Command(BaseCommand):
     help = 'Watch Minecraft server chat in real-time'
+
+    # Random musing interval: 10-25 minutes (in seconds)
+    MUSING_MIN_INTERVAL = 10 * 60
+    MUSING_MAX_INTERVAL = 25 * 60
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,6 +38,11 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS('Starting Jarvis chat watcher...'))
         self.stdout.write('Press Ctrl+C to stop.\n')
+
+        # Start random events thread
+        events_thread = threading.Thread(target=self.random_events_loop, daemon=True)
+        events_thread.start()
+        self.stdout.write(self.style.SUCCESS('Random events thread started.'))
 
         try:
             for message in tail_chat():
@@ -44,6 +56,46 @@ class Command(BaseCommand):
             sys.exit(1)
 
         self.stdout.write(self.style.SUCCESS('\nJarvis stopped.'))
+
+    def random_events_loop(self):
+        """Background thread that triggers random events periodically."""
+        while self.running:
+            # Sleep for a random interval (10-25 minutes)
+            interval = random.randint(self.MUSING_MIN_INTERVAL, self.MUSING_MAX_INTERVAL)
+            self.stdout.write(f'[Random Events] Next musing in {interval // 60} minutes...')
+
+            # Sleep in small increments so we can exit quickly
+            for _ in range(interval):
+                if not self.running:
+                    return
+                time.sleep(1)
+
+            # Check if players are online
+            players = get_online_players()
+            if not players:
+                self.stdout.write('[Random Events] No players online, skipping musing.')
+                continue
+
+            self.stdout.write(f'[Random Events] Players online: {", ".join(players)}')
+
+            # Generate and send a random musing
+            try:
+                musing = random_musing()
+                if musing:
+                    self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Musing: {musing}'))
+                    say(musing)
+
+                    # Log as ChatMessage from Jarvis
+                    jarvis_player, _ = MinecraftPlayer.objects.get_or_create(username='Jarvis')
+                    ChatMessage.objects.create(
+                        player=jarvis_player,
+                        content=musing,
+                        timestamp=timezone.now()
+                    )
+                else:
+                    self.stderr.write('[Random Events] Failed to generate musing.')
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f'[Random Events] Error: {e}'))
 
     def process_message(self, message):
         """Process a single chat message."""

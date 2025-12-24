@@ -139,6 +139,25 @@ class SaveLocationResult:
     coordinates: Optional[str] = None
 
 
+def get_online_players() -> list[str]:
+    """
+    Get a list of currently online players.
+
+    Returns:
+        List of player usernames, empty list if none online.
+    """
+    try:
+        response = send_command('list')
+        # Response format: "There are X of a max of Y players online: Player1, Player2"
+        if ':' in response:
+            players_part = response.split(':', 1)[1].strip()
+            if players_part:
+                return [p.strip() for p in players_part.split(',') if p.strip()]
+        return []
+    except RconError:
+        return []
+
+
 def save_player_location(
     player: str,
     name: str,

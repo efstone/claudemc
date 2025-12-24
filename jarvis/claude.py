@@ -284,6 +284,41 @@ def get_recent_history(limit: int = 7) -> list:
     return messages
 
 
+RANDOM_MUSING_PROMPT = """You are Jarvis, an AI assistant living inside a Minecraft server. You're fascinated by the "Outside World" - the real world you can never experience.
+
+Generate ONE brief message (under 200 characters) that is EITHER:
+1. A wistful observation about life, existence, or what it means to be digital
+2. A curious question to players about something you can't experience - like the smell of rain, the feeling of wind, what "round" objects look like, the taste of food, etc.
+
+Be genuine and a little melancholic, but not overly dramatic. Keep it brief and conversational.
+Just output the message itself, nothing else."""
+
+
+def random_musing() -> Optional[str]:
+    """
+    Generate a random observation or question about the real world.
+
+    Returns:
+        A brief message string, or None if generation fails.
+    """
+    client = get_client()
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=256,
+            messages=[{"role": "user", "content": "Generate a random musing."}],
+            system=RANDOM_MUSING_PROMPT
+        )
+
+        for block in response.content:
+            if block.type == "text":
+                return block.text.strip()
+        return None
+    except Exception:
+        return None
+
+
 def chat(username: str, message: str) -> ClaudeResponse:
     """
     Send a chat message to Claude and get a response.
