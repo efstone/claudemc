@@ -139,22 +139,88 @@ class SaveLocationResult:
     coordinates: Optional[str] = None
 
 
+def _rcon_send(sock, packet_type: int, payload: str, request_id: int = 1) -> str:
+    """Send an RCON packet and receive response. Thread-safe (no signals)."""
+    import struct
+
+    # Build packet: length (4) + request_id (4) + type (4) + payload + null + null
+    payload_bytes = payload.encode('utf-8') + b'\x00\x00'
+    packet = struct.pack('<iii', request_id, packet_type, 0)[:8]
+    packet = struct.pack('<i', len(payload_bytes) + 8) + struct.pack('<ii', request_id, packet_type) + payload_bytes
+
+    sock.send(packet)
+
+    # Receive response
+    response_data = sock.recv(4096)
+    if len(response_data) < 12:
+        return ''
+
+    # Parse response: length (4) + request_id (4) + type (4) + payload + nulls
+    response_payload = response_data[12:-2].decode('utf-8', errors='ignore')
+    return response_payload
+
+
+def send_command_threadsafe(command: str) -> str:
+    """
+    Send an RCON command using raw sockets. Thread-safe (no signals).
+
+    Use this from background threads instead of send_command().
+    """
+    import socket
+
+    RCON_LOGIN = 3
+    RCON_COMMAND = 2
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5.0)
+    sock.connect((settings.RCON_HOST, settings.RCON_PORT))
+
+    # Login
+    _rcon_send(sock, RCON_LOGIN, settings.RCON_PASSWORD)
+
+    # Send command
+    response = _rcon_send(sock, RCON_COMMAND, command)
+
+    sock.close()
+    return response
+
+
 def get_online_players() -> list[str]:
     """
     Get a list of currently online players.
 
+    Thread-safe version using raw sockets (no MCRcon library, no signals).
+
     Returns:
         List of player usernames, empty list if none online.
     """
+    import socket
+
+    RCON_LOGIN = 3
+    RCON_COMMAND = 2
+
     try:
-        response = send_command('list')
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5.0)
+        sock.connect((settings.RCON_HOST, settings.RCON_PORT))
+
+        # Login
+        _rcon_send(sock, RCON_LOGIN, settings.RCON_PASSWORD)
+
+        # Send 'list' command
+        response = _rcon_send(sock, RCON_COMMAND, 'list')
+
+        sock.close()
+
+        print(f"  -> list response: {repr(response)}")
         # Response format: "There are X of a max of Y players online: Player1, Player2"
         if ':' in response:
             players_part = response.split(':', 1)[1].strip()
             if players_part:
                 return [p.strip() for p in players_part.split(',') if p.strip()]
         return []
-    except RconError:
+    except Exception as e:
+        print(f"  -> get_online_players error: {e}")
         return []
 
 

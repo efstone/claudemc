@@ -17,7 +17,7 @@ from django.utils import timezone
 from jarvis.claude import chat as claude_chat, random_musing, clawed_eagle_joke, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
-from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, RconError
+from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, send_command_threadsafe, RconError
 from jarvis.tailer import tail_chat
 
 
@@ -25,8 +25,8 @@ class Command(BaseCommand):
     help = 'Watch Minecraft server chat in real-time'
 
     # Random musing interval: 10-25 minutes (in seconds)
-    MUSING_MIN_INTERVAL = 10 * 60
-    MUSING_MAX_INTERVAL = 25 * 60
+    MUSING_MIN_INTERVAL = 1 * 60
+    MUSING_MAX_INTERVAL = 2 * 60
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -92,7 +92,9 @@ class Command(BaseCommand):
 
                 if musing:
                     self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Message: {musing}'))
-                    say(musing)
+                    # Use thread-safe RCON (no signals)
+                    safe_message = musing.replace('"', "'").replace('\n', ' ')
+                    send_command_threadsafe(f'say {safe_message}')
 
                     # Log as ChatMessage from Jarvis
                     jarvis_player, _ = MinecraftPlayer.objects.get_or_create(username='Jarvis')
