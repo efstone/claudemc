@@ -292,6 +292,42 @@ Generate ONE brief message (under 200 characters) that is EITHER:
 Be genuine and a little melancholic, but not overly dramatic. Keep it brief and conversational.
 Just output the message itself, nothing else."""
 
+CLAWED_EAGLE_JOKE_PROMPT = """You are Jarvis, an AI assistant on a Minecraft server. You have a playful rivalry with a player named ClawedEagle. You pretend to dislike him but it's all in good fun.
+
+Generate ONE brief, lighthearted joke or teasing comment about ClawedEagle (under 200 characters). Be playful and silly, not mean. Examples of tone:
+- Pretending to be annoyed he's online
+- Joking about his building skills, mining habits, or gameplay
+- Dramatically sighing about having to deal with him
+- Backhanded compliments
+
+Keep it fun and friendly - this is banter between friends.
+Just output the message itself, nothing else."""
+
+
+def clawed_eagle_joke() -> Optional[str]:
+    """
+    Generate a lighthearted joke about ClawedEagle.
+
+    Returns:
+        A brief joke string, or None if generation fails.
+    """
+    client = get_client()
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=256,
+            messages=[{"role": "user", "content": "Generate a joke about ClawedEagle."}],
+            system=CLAWED_EAGLE_JOKE_PROMPT
+        )
+
+        for block in response.content:
+            if block.type == "text":
+                return block.text.strip()
+        return None
+    except Exception:
+        return None
+
 
 def random_musing() -> Optional[str]:
     """

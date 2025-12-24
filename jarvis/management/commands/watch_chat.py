@@ -14,7 +14,7 @@ import time
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from jarvis.claude import chat as claude_chat, random_musing, ToolCall
+from jarvis.claude import chat as claude_chat, random_musing, clawed_eagle_joke, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
 from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, RconError
@@ -78,11 +78,20 @@ class Command(BaseCommand):
 
             self.stdout.write(f'[Random Events] Players online: {", ".join(players)}')
 
-            # Generate and send a random musing
+            # Check if ClawedEagle is online - 1 in 3 chance of a joke about him
+            clawed_eagle_online = any(p.lower() == 'clawedeagle' for p in players)
+            do_eagle_joke = clawed_eagle_online and random.randint(1, 3) == 1
+
+            # Generate and send a random musing (or ClawedEagle joke)
             try:
-                musing = random_musing()
+                if do_eagle_joke:
+                    self.stdout.write('[Random Events] ClawedEagle detected, generating joke...')
+                    musing = clawed_eagle_joke()
+                else:
+                    musing = random_musing()
+
                 if musing:
-                    self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Musing: {musing}'))
+                    self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Message: {musing}'))
                     say(musing)
 
                     # Log as ChatMessage from Jarvis
