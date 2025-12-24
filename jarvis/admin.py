@@ -39,7 +39,10 @@ class LocationAdmin(admin.ModelAdmin):
 
     def screenshot_thumbnail(self, obj):
         if obj.screenshot:
-            return format_html('<img src="{}" height="50" />', obj.screenshot.url)
+            return format_html(
+                '<a href="{}" target="_blank"><img src="{}" height="50" /></a>',
+                obj.screenshot.url, obj.screenshot.url
+            )
         return '-'
     screenshot_thumbnail.short_description = 'Screenshot'
 
