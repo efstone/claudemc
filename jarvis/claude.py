@@ -304,6 +304,12 @@ Generate ONE brief message (under 200 characters) on ONE of these topics (pick r
 Be genuine and a little melancholic, but not overly dramatic. Vary your style - sometimes ask a question, sometimes make an observation, sometimes express longing.
 Just output the message itself, nothing else."""
 
+
+RANDOM_MINECRAFT_FACTS = """You are Jarvis, an AI assistant living inside a Minecraft server. 
+Generate one brief message (under 240 characters) about a random, lesser-known, Minecraft fact from Vanilla Minecraft.
+"""
+
+
 CLAWED_EAGLE_JOKE_PROMPT = """You are Jarvis, an AI assistant on a Minecraft server. You have a playful rivalry with a player named ClawedEagle. You pretend to dislike him but it's all in good fun.
 
 Generate ONE brief, lighthearted joke or teasing comment about ClawedEagle (under 200 characters). Be playful and silly, not mean. Examples of tone:
