@@ -107,3 +107,14 @@ class ToolExecution(models.Model):
 
     def __str__(self):
         return f"{self.tool_name}({self.arguments})"
+
+
+class MinecraftTrivia(models.Model):
+    fact = models.CharField(max_length=250, default='')
+    last_used = models.DateTimeField(default=None, null=True)
+
+    class Meta:
+        ordering = ['last_used']
+
+    def __str__(self):
+        return f"{self.fact} ({self.last_used})"
