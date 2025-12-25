@@ -10,6 +10,7 @@ from typing import Optional
 import anthropic
 
 from django.conf import settings
+from django.db.models import F
 
 from .models import Location, ClaudeResponse as ClaudeResponseModel
 
@@ -305,11 +306,6 @@ Be genuine and a little melancholic, but not overly dramatic. Vary your style - 
 Just output the message itself, nothing else."""
 
 
-RANDOM_MINECRAFT_FACTS = """You are Jarvis, an AI assistant living inside a Minecraft server. 
-Generate one brief message (under 240 characters) about a random, lesser-known, Minecraft fact from Vanilla Minecraft.
-"""
-
-
 CLAWED_EAGLE_JOKE_PROMPT = """You are Jarvis, an AI assistant on a Minecraft server. You have a playful rivalry with a player named ClawedEagle. You pretend to dislike him but it's all in good fun.
 
 Generate ONE brief, lighthearted joke or teasing comment about ClawedEagle (under 200 characters). Be playful and silly, not mean. Examples of tone:
@@ -320,13 +316,6 @@ Generate ONE brief, lighthearted joke or teasing comment about ClawedEagle (unde
 
 Keep it fun and friendly - this is banter between friends.
 Just output the message itself, nothing else."""
-
-
-# Prompts in rotation for random events. Comment out to disable.
-RANDOM_EVENT_PROMPTS = [
-    # RANDOM_MUSING_PROMPT,  # On ice for now
-    RANDOM_MINECRAFT_FACTS,
-]
 
 
 def generate_random_message(system_prompt: str) -> Optional[str]:
@@ -358,12 +347,28 @@ def generate_random_message(system_prompt: str) -> Optional[str]:
 
 
 def random_event_message() -> Optional[str]:
-    """Generate a random message from the prompts in rotation."""
-    import random
-    if not RANDOM_EVENT_PROMPTS:
+    """
+    Get a random trivia fact from the database.
+
+    Prioritizes facts that have never been used (last_used is null),
+    then oldest used facts. Updates last_used when selected.
+    """
+    from django.utils import timezone
+    from .models import MinecraftTrivia
+
+    # Get the least recently used fact (nulls first, then oldest)
+    trivia = MinecraftTrivia.objects.order_by(
+        F('last_used').asc(nulls_first=True)
+    ).first()
+
+    if not trivia:
         return None
-    prompt = random.choice(RANDOM_EVENT_PROMPTS)
-    return generate_random_message(prompt)
+
+    # Update last_used timestamp
+    trivia.last_used = timezone.now()
+    trivia.save()
+
+    return trivia.fact
 
 
 def clawed_eagle_joke() -> Optional[str]:
