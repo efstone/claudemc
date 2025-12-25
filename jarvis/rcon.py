@@ -51,12 +51,13 @@ def send_command(command: str, validate: bool = True) -> str:
 
 
 def say(message: str) -> str:
-    """Send a chat message to the server. Splits long messages automatically."""
-    # Sanitize message - remove any command injection attempts
-    safe_message = message.replace('"', "'").replace('\n', ' ')
+    """Send a chat message to the server using tellraw. Splits long messages automatically."""
+    # Sanitize message - escape quotes and remove newlines
+    safe_message = message.replace('\\', '\\\\').replace('"', '\\"').replace('\n', ' ')
 
-    # Minecraft limit is 256 chars total, "say " prefix is 4 chars, leave buffer
-    max_length = 240
+    # tellraw format: tellraw @a {"text":"[Jarvis] message"}
+    # Leave room for the JSON wrapper
+    max_length = 200
     responses = []
 
     # Split into chunks if too long
@@ -71,7 +72,7 @@ def say(message: str) -> str:
                 safe_message = chunk[last_space+1:] + safe_message
                 chunk = chunk[:last_space]
 
-        responses.append(send_command(f'say {chunk}'))
+        responses.append(send_command(f'tellraw @a {{"text":"[Jarvis] {chunk}"}}'))
 
     return ' | '.join(responses) if responses else ''
 

@@ -93,8 +93,8 @@ class Command(BaseCommand):
                 if message:
                     self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Message: {message}'))
                     # Use thread-safe RCON (no signals)
-                    safe_message = message.replace('"', "'").replace('\n', ' ')
-                    send_command_threadsafe(f'say {safe_message}')
+                    safe_message = message.replace('\\', '\\\\').replace('"', '\\"').replace('\n', ' ')
+                    send_command_threadsafe(f'tellraw @a {{"text":"[Jarvis] {safe_message}"}}')
 
                     # Log as ChatMessage from Jarvis
                     jarvis_player, _ = MinecraftPlayer.objects.get_or_create(username='Jarvis')
