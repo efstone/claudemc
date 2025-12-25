@@ -322,6 +322,13 @@ Keep it fun and friendly - this is banter between friends.
 Just output the message itself, nothing else."""
 
 
+# Prompts in rotation for random events. Comment out to disable.
+RANDOM_EVENT_PROMPTS = [
+    # RANDOM_MUSING_PROMPT,  # On ice for now
+    RANDOM_MINECRAFT_FACTS,
+]
+
+
 def generate_random_message(system_prompt: str) -> Optional[str]:
     """
     Generate a random message using the given system prompt.
@@ -350,19 +357,18 @@ def generate_random_message(system_prompt: str) -> Optional[str]:
         return None
 
 
-def random_musing() -> Optional[str]:
-    """Generate a random observation or question about the real world."""
-    return generate_random_message(RANDOM_MUSING_PROMPT)
+def random_event_message() -> Optional[str]:
+    """Generate a random message from the prompts in rotation."""
+    import random
+    if not RANDOM_EVENT_PROMPTS:
+        return None
+    prompt = random.choice(RANDOM_EVENT_PROMPTS)
+    return generate_random_message(prompt)
 
 
 def clawed_eagle_joke() -> Optional[str]:
-    """Generate a lighthearted joke about ClawedEagle."""
+    """Generate a lighthearted joke about ClawedEagle (special case, not in rotation)."""
     return generate_random_message(CLAWED_EAGLE_JOKE_PROMPT)
-
-
-def random_minecraft_fact() -> Optional[str]:
-    """Generate a random Minecraft fact."""
-    return generate_random_message(RANDOM_MINECRAFT_FACTS)
 
 
 def chat(username: str, message: str) -> ClaudeResponse:

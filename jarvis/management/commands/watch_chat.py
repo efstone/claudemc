@@ -14,7 +14,7 @@ import time
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from jarvis.claude import chat as claude_chat, random_musing, clawed_eagle_joke, ToolCall
+from jarvis.claude import chat as claude_chat, random_event_message, clawed_eagle_joke, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
 from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, send_command_threadsafe, RconError
@@ -82,29 +82,29 @@ class Command(BaseCommand):
             clawed_eagle_online = any(p.lower() == 'clawedeagle' for p in players)
             do_eagle_joke = clawed_eagle_online and random.randint(1, 3) == 1
 
-            # Generate and send a random musing (or ClawedEagle joke)
+            # Generate and send a random message (or ClawedEagle joke)
             try:
                 if do_eagle_joke:
                     self.stdout.write('[Random Events] ClawedEagle detected, generating joke...')
-                    musing = clawed_eagle_joke()
+                    message = clawed_eagle_joke()
                 else:
-                    musing = random_musing()
+                    message = random_event_message()
 
-                if musing:
-                    self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Message: {musing}'))
+                if message:
+                    self.stdout.write(self.style.HTTP_INFO(f'[Random Events] Message: {message}'))
                     # Use thread-safe RCON (no signals)
-                    safe_message = musing.replace('"', "'").replace('\n', ' ')
+                    safe_message = message.replace('"', "'").replace('\n', ' ')
                     send_command_threadsafe(f'say {safe_message}')
 
                     # Log as ChatMessage from Jarvis
                     jarvis_player, _ = MinecraftPlayer.objects.get_or_create(username='Jarvis')
                     ChatMessage.objects.create(
                         player=jarvis_player,
-                        content=musing,
+                        content=message,
                         timestamp=timezone.now()
                     )
                 else:
-                    self.stderr.write('[Random Events] Failed to generate musing.')
+                    self.stderr.write('[Random Events] Failed to generate message.')
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f'[Random Events] Error: {e}'))
 
