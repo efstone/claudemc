@@ -322,12 +322,15 @@ Keep it fun and friendly - this is banter between friends.
 Just output the message itself, nothing else."""
 
 
-def clawed_eagle_joke() -> Optional[str]:
+def generate_random_message(system_prompt: str) -> Optional[str]:
     """
-    Generate a lighthearted joke about ClawedEagle.
+    Generate a random message using the given system prompt.
+
+    Args:
+        system_prompt: The system prompt to use for generation.
 
     Returns:
-        A brief joke string, or None if generation fails.
+        A brief message string, or None if generation fails.
     """
     client = get_client()
 
@@ -335,8 +338,8 @@ def clawed_eagle_joke() -> Optional[str]:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=256,
-            messages=[{"role": "user", "content": "Generate a joke about ClawedEagle."}],
-            system=CLAWED_EAGLE_JOKE_PROMPT
+            messages=[{"role": "user", "content": "Generate a message."}],
+            system=system_prompt
         )
 
         for block in response.content:
@@ -348,28 +351,18 @@ def clawed_eagle_joke() -> Optional[str]:
 
 
 def random_musing() -> Optional[str]:
-    """
-    Generate a random observation or question about the real world.
+    """Generate a random observation or question about the real world."""
+    return generate_random_message(RANDOM_MUSING_PROMPT)
 
-    Returns:
-        A brief message string, or None if generation fails.
-    """
-    client = get_client()
 
-    try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=256,
-            messages=[{"role": "user", "content": "Generate a random musing."}],
-            system=RANDOM_MUSING_PROMPT
-        )
+def clawed_eagle_joke() -> Optional[str]:
+    """Generate a lighthearted joke about ClawedEagle."""
+    return generate_random_message(CLAWED_EAGLE_JOKE_PROMPT)
 
-        for block in response.content:
-            if block.type == "text":
-                return block.text.strip()
-        return None
-    except Exception:
-        return None
+
+def random_minecraft_fact() -> Optional[str]:
+    """Generate a random Minecraft fact."""
+    return generate_random_message(RANDOM_MINECRAFT_FACTS)
 
 
 def chat(username: str, message: str) -> ClaudeResponse:
