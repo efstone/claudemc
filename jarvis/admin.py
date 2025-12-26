@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import MinecraftPlayer, ChatMessage, Location, ClaudeResponse, ToolExecution
+from .models import MinecraftPlayer, ChatMessage, Location, ClaudeResponse, ToolExecution, MinecraftTrivia
 
 admin.site.site_header = 'KnapiksRule administration'
 
@@ -114,3 +114,15 @@ class ClaudeResponseAdmin(admin.ModelAdmin):
 
         return ' | '.join(summaries)
     tools_summary.short_description = 'Tool Calls'
+
+
+@admin.register(MinecraftTrivia)
+class MinecraftTriviaAdmin(admin.ModelAdmin):
+    list_display = ('short_fact', 'last_used')
+    list_filter = ('last_used',)
+    search_fields = ('fact',)
+    ordering = ('last_used',)
+
+    def short_fact(self, obj):
+        return obj.fact[:80] + '...' if len(obj.fact) > 80 else obj.fact
+    short_fact.short_description = 'Fact'
