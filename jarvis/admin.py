@@ -8,14 +8,20 @@ admin.site.site_header = 'KnapiksRule administration'
 
 @admin.register(MinecraftPlayer)
 class MinecraftPlayerAdmin(admin.ModelAdmin):
-    list_display = ('username', 'user', 'is_jarvis_user')
-    list_filter = ('user__groups',)
+    list_display = ('username', 'user', 'is_jarvis_user', 'login_coords', 'loot_last_given')
+    list_filter = ('user__groups', 'loot_last_given')
     search_fields = ('username', 'user__username')
 
     def is_jarvis_user(self, obj):
         return obj.is_jarvis_user()
     is_jarvis_user.boolean = True
     is_jarvis_user.short_description = 'Jarvis Access'
+
+    def login_coords(self, obj):
+        if obj.last_login_x is not None:
+            return f"{obj.last_login_x}, {obj.last_login_y}, {obj.last_login_z}"
+        return '-'
+    login_coords.short_description = 'Last Login Coords'
 
 
 @admin.register(ChatMessage)
