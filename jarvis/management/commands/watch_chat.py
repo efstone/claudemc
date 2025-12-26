@@ -16,9 +16,10 @@ from django.utils import timezone
 
 from jarvis.claude import chat as claude_chat, random_event_message, clawed_eagle_joke, ToolCall
 from jarvis.commands import CommandNotAllowedError
+from jarvis.explorer import check_all_players_for_rewards
 from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
 from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, send_command_threadsafe, RconError
-from jarvis.tailer import tail_chat
+from jarvis.tailer import tail_log
 
 
 class Command(BaseCommand):
@@ -27,6 +28,9 @@ class Command(BaseCommand):
     # Random musing interval: 10-25 minutes (in seconds)
     MUSING_MIN_INTERVAL = 10 * 60
     MUSING_MAX_INTERVAL = 25 * 60
+
+    # Explorer rewards interval: 5 minutes
+    EXPLORER_INTERVAL = 5 * 60
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,18 +48,73 @@ class Command(BaseCommand):
         events_thread.start()
         self.stdout.write(self.style.SUCCESS('Random events thread started.'))
 
+        # Start explorer rewards thread
+        explorer_thread = threading.Thread(target=self.explorer_rewards_loop, daemon=True)
+        explorer_thread.start()
+        self.stdout.write(self.style.SUCCESS('Explorer rewards thread started.'))
+
         try:
-            for message in tail_chat():
+            for event in tail_log():
                 if not self.running:
                     break
 
-                self.process_message(message)
+                if event.event_type == 'chat':
+                    self.process_message(event.data)
+                elif event.event_type == 'login':
+                    self.process_login(event.data)
 
         except Exception as e:
             self.stderr.write(self.style.ERROR(f'Error: {e}'))
             sys.exit(1)
 
         self.stdout.write(self.style.SUCCESS('\nJarvis stopped.'))
+
+    def process_login(self, login):
+        """Process a player login event - save coordinates."""
+        self.stdout.write(
+            f"[{login.timestamp.strftime('%Y-%m-%d %H:%M:%S')}] "
+            f"{login.username} logged in at ({login.x}, {login.y}, {login.z})"
+        )
+
+        # Get or create the player
+        player, created = MinecraftPlayer.objects.get_or_create(
+            username__iexact=login.username,
+            defaults={'username': login.username}
+        )
+        if created:
+            self.stdout.write(self.style.NOTICE(f'  -> New player: {login.username}'))
+
+        # Save login coordinates
+        player.last_login_x = login.x
+        player.last_login_y = login.y
+        player.last_login_z = login.z
+        player.save()
+        self.stdout.write(f'  -> Saved login coords: ({login.x}, {login.y}, {login.z})')
+
+    def explorer_rewards_loop(self):
+        """Background thread that checks for explorer rewards periodically."""
+        while self.running:
+            self.stdout.write(f'[Explorer] Next check in {self.EXPLORER_INTERVAL // 60} minutes...')
+
+            # Sleep in small increments so we can exit quickly
+            for _ in range(self.EXPLORER_INTERVAL):
+                if not self.running:
+                    return
+                time.sleep(1)
+
+            # Check all online players for rewards
+            self.stdout.write('[Explorer] Checking players for explorer rewards...')
+            try:
+                results = check_all_players_for_rewards()
+                for result in results:
+                    if result.success:
+                        self.stdout.write(self.style.SUCCESS(
+                            f'[Explorer] {result.player}: {result.reason}'
+                        ))
+                    else:
+                        self.stdout.write(f'[Explorer] {result.player}: {result.reason}')
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f'[Explorer] Error: {e}'))
 
     def random_events_loop(self):
         """Background thread that triggers random events periodically."""

@@ -14,11 +14,25 @@ class MinecraftPlayer(models.Model):
         related_name='minecraft_player'
     )
 
+    # Explorer rewards tracking
+    loot_last_given = models.DateTimeField(null=True, blank=True)
+    last_login_x = models.IntegerField(null=True, blank=True)
+    last_login_y = models.IntegerField(null=True, blank=True)
+    last_login_z = models.IntegerField(null=True, blank=True)
+
     def is_jarvis_user(self) -> bool:
         """Check if this player's Django user is in the Jarvis group."""
         if self.user is None:
             return False
         return self.user.groups.filter(name='Jarvis').exists()
+
+    def can_receive_loot(self) -> bool:
+        """Check if player can receive loot (not given in last hour)."""
+        if self.loot_last_given is None:
+            return True
+        from django.utils import timezone
+        from datetime import timedelta
+        return timezone.now() - self.loot_last_given > timedelta(hours=1)
 
     def __str__(self):
         if self.user:
