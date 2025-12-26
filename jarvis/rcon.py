@@ -102,6 +102,20 @@ def weather(precipitation: str, duration: str = None) -> str:
     return send_command(f'weather {precipitation}')
 
 
+def give_loot(player: str, loot_table: str = 'minecraft:chests/simple_dungeon') -> str:
+    """
+    Give random loot from a loot table to a player.
+
+    Args:
+        player: The player's username.
+        loot_table: The loot table to use. Defaults to simple_dungeon.
+
+    Returns:
+        RCON response.
+    """
+    return send_command(f'loot give {player} loot {loot_table}')
+
+
 def get_player_position(player: str) -> Optional[PlayerPosition]:
     """
     Get a player's current position by querying entity data via RCON.
@@ -184,6 +198,43 @@ def send_command_threadsafe(command: str) -> str:
 
     sock.close()
     return response
+
+
+def get_player_position_threadsafe(player: str) -> Optional[PlayerPosition]:
+    """
+    Get a player's current position using raw sockets. Thread-safe (no signals).
+
+    Args:
+        player: The player's username.
+
+    Returns:
+        PlayerPosition if found, None otherwise.
+    """
+    import socket
+
+    RCON_LOGIN = 3
+    RCON_COMMAND = 2
+
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5.0)
+        sock.connect((settings.RCON_HOST, settings.RCON_PORT))
+
+        # Login
+        _rcon_send(sock, RCON_LOGIN, settings.RCON_PASSWORD)
+
+        # Send data command
+        response = _rcon_send(sock, RCON_COMMAND, f'data get entity {player} Pos')
+
+        sock.close()
+
+        # Parse the response
+        position = parse_position_from_rcon(response)
+        return position
+
+    except Exception as e:
+        print(f"  -> get_player_position_threadsafe error: {e}")
+        return None
 
 
 def get_online_players() -> list[str]:

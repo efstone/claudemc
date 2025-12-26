@@ -29,13 +29,14 @@ RCON_PASSWORD = os.getenv('RCON_PASSWORD', '')
 # Anthropic API
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
 
-ALLOWED_HOSTS = ['localhost', '192.168.42.123', '127.0.0.1', 'minecraft.aquapony.com']
+ALLOWED_HOSTS = ['localhost', '192.168.42.123', '127.0.0.1', 'minecraft.aquapony.com', '100.64.107.75']
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8080',
     'http://127.0.0.1:8080',
     'http://192.168.42.123:8080',
     'http://minecraft.aquapony.com:8080',
+    'http://100.64.107.75:8080'
 ]
 
 

@@ -94,6 +94,58 @@ def parse_position_from_rcon(response: str) -> Optional[PlayerPosition]:
     )
 
 
+@dataclass
+class PlayerLogin:
+    """Parsed player login event with coordinates."""
+    username: str
+    x: int
+    y: int
+    z: int
+    timestamp: datetime
+
+
+# Pattern for player login: [HH:MM:SS] [Server thread/INFO]: PlayerName[/IP:port] logged in with entity id X at (X.X, Y.Y, Z.Z)
+LOGIN_PATTERN = re.compile(
+    r'^\[(\d{2}:\d{2}:\d{2})\] '  # timestamp
+    r'\[Server thread/INFO\]: '  # thread info
+    r'(\w+)\[.+\] logged in with entity id \d+ at '  # username
+    r'\((-?[\d.]+), (-?[\d.]+), (-?[\d.]+)\)'  # coordinates
+)
+
+
+def parse_login(line: str, log_date: Optional[date] = None) -> Optional[PlayerLogin]:
+    """
+    Parse a player login event from a log line.
+
+    Args:
+        line: A single line from the Minecraft server log.
+        log_date: The date to use for the timestamp. Defaults to today.
+
+    Returns:
+        PlayerLogin if the line is a login event, None otherwise.
+    """
+    match = LOGIN_PATTERN.match(line.strip())
+    if not match:
+        return None
+
+    time_str, username, x_str, y_str, z_str = match.groups()
+
+    # Combine time from log with provided date (or today in Eastern time)
+    if log_date is None:
+        log_date = datetime.now(EASTERN).date()
+
+    time_obj = datetime.strptime(time_str, '%H:%M:%S').time()
+    timestamp = datetime.combine(log_date, time_obj, tzinfo=EASTERN)
+
+    return PlayerLogin(
+        username=username,
+        x=int(float(x_str)),
+        y=int(float(y_str)),
+        z=int(float(z_str)),
+        timestamp=timestamp
+    )
+
+
 def parse_chat(line: str, log_date: Optional[date] = None) -> Optional[ChatMessage]:
     """
     Parse a chat message from a log line.
