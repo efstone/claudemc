@@ -163,7 +163,6 @@ You have access to the following commands:
 
 Guidelines:
 - Be friendly and helpful
-- IMPORTANT: Keep messages under 200 characters! Minecraft has a 256 char limit. Be brief.
 - Use the say tool to respond to players
 - Only use give/tp/time/weather when explicitly requested
 - Do NOT repeat recent commands. If you just gave items, teleported, changed time, or set weather, don't do it again unless the player explicitly asks again.
@@ -173,8 +172,14 @@ Guidelines:
 - You can roleplay actions in asterisks, like *high fives* or *does a little dance*. Keep the vibe energetic and 'extra'!
 - When using tools, don't just do it silently. Announce it with excitement! If giving a diamond, call it a 'shiny blue pebble of joy.' If teleporting, mention how dizzy they might feel.
 
+{response_length_guidance}
 
 The player's username will be provided with each message."""
+
+# Response length guidance variants
+SHORT_RESPONSE_GUIDANCE = """IMPORTANT: Keep messages under 200 characters! Minecraft chat is limited. Be brief and punchy."""
+
+LONG_RESPONSE_GUIDANCE = """MESSAGE LENGTH: The player is asking about Minecraft gameplay, mechanics, or tips. You may give a detailed response up to 700 characters. The message will be split across multiple chat lines automatically."""
 
 
 def is_save_location_request(message: str) -> bool:
@@ -194,9 +199,47 @@ def is_save_location_request(message: str) -> bool:
     return has_save_word and has_location_word
 
 
-def build_system_prompt(include_locations: bool = True) -> str:
+def is_minecraft_question(message: str) -> bool:
+    """
+    Detect if a message is asking about Minecraft gameplay, mechanics, or tips.
+
+    These questions warrant longer, more detailed responses.
+    """
+    message_lower = message.lower()
+
+    # Question indicators
+    question_words = {'how', 'what', 'where', 'why', 'when', 'which', 'can', 'does', 'is', 'are', 'should'}
+    has_question = any(message_lower.startswith(w) or f' {w} ' in message_lower for w in question_words)
+    has_question = has_question or '?' in message
+
+    # Minecraft-specific topics
+    minecraft_topics = {
+        'craft', 'crafting', 'recipe', 'make', 'build', 'smelt', 'enchant', 'enchanting',
+        'brewing', 'potion', 'farm', 'farming', 'redstone', 'mob', 'mobs', 'spawn',
+        'biome', 'dimension', 'nether', 'end', 'ore', 'mining', 'villager', 'trading',
+        'beacon', 'elytra', 'netherite', 'diamond', 'iron', 'gold', 'emerald',
+        'zombie', 'skeleton', 'creeper', 'enderman', 'wither', 'dragon', 'ender',
+        'portal', 'stronghold', 'dungeon', 'temple', 'mansion', 'monument',
+        'block', 'blocks', 'item', 'items', 'tool', 'armor', 'weapon',
+        'survive', 'survival', 'xp', 'experience', 'level', 'effect',
+        'tame', 'breed', 'horse', 'wolf', 'cat', 'parrot',
+        'find', 'get', 'obtain', 'locate'
+    }
+
+    has_minecraft_topic = any(topic in message_lower for topic in minecraft_topics)
+
+    return has_question and has_minecraft_topic
+
+
+def build_system_prompt(include_locations: bool = True, allow_long_response: bool = False) -> str:
     """Build the system prompt with current locations from database."""
-    prompt = SYSTEM_PROMPT_BASE
+    # Select appropriate response length guidance
+    if allow_long_response:
+        guidance = LONG_RESPONSE_GUIDANCE
+    else:
+        guidance = SHORT_RESPONSE_GUIDANCE
+
+    prompt = SYSTEM_PROMPT_BASE.format(response_length_guidance=guidance)
 
     if include_locations:
         locations = Location.objects.all()
@@ -402,10 +445,16 @@ def chat(username: str, message: str) -> ClaudeResponse:
     # This prevents Claude from seeing existing locations and refusing to call save_location
     include_locations = not is_save_location_request(message)
 
+    # Allow longer responses for Minecraft gameplay questions
+    allow_long_response = is_minecraft_question(message)
+
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
-        system=build_system_prompt(include_locations=include_locations),
+        system=build_system_prompt(
+            include_locations=include_locations,
+            allow_long_response=allow_long_response
+        ),
         tools=MINECRAFT_TOOLS + [WEB_SEARCH_TOOL],
         messages=messages
     )

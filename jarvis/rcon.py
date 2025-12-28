@@ -50,28 +50,54 @@ def send_command(command: str, validate: bool = True) -> str:
         raise RconError(f"RCON error: {e}") from e
 
 
+def split_message(message: str, max_chunk_length: int = 200, max_chunks: int = 3) -> list[str]:
+    """
+    Split a message into chunks without breaking words.
+
+    Args:
+        message: The message to split.
+        max_chunk_length: Maximum characters per chunk.
+        max_chunks: Maximum number of chunks to create.
+
+    Returns:
+        List of message chunks.
+    """
+    chunks = []
+    remaining = message.strip()
+
+    while remaining and len(chunks) < max_chunks:
+        if len(remaining) <= max_chunk_length:
+            chunks.append(remaining)
+            break
+
+        # Find a good break point (space) within the limit
+        chunk = remaining[:max_chunk_length]
+        last_space = chunk.rfind(' ')
+
+        if last_space > max_chunk_length // 2:
+            # Break at the space
+            chunks.append(chunk[:last_space])
+            remaining = remaining[last_space + 1:]
+        else:
+            # No good space found, just cut at limit (rare edge case)
+            chunks.append(chunk)
+            remaining = remaining[max_chunk_length:]
+
+        remaining = remaining.strip()
+
+    return chunks
+
+
 def say(message: str) -> str:
-    """Send a chat message to the server using tellraw. Splits long messages automatically."""
+    """Send a chat message to the server using tellraw. Splits long messages into max 3 parts."""
     # Sanitize message - escape quotes and remove newlines
     safe_message = message.replace('\\', '\\\\').replace('"', '\\"').replace('\n', ' ')
 
-    # tellraw format: tellraw @a {"text":"[Jarvis] message"}
-    # Leave room for the JSON wrapper
-    max_length = 200
+    # Split into chunks (max 200 chars each, max 3 chunks)
+    chunks = split_message(safe_message, max_chunk_length=200, max_chunks=3)
+
     responses = []
-
-    # Split into chunks if too long
-    while safe_message:
-        chunk = safe_message[:max_length]
-        safe_message = safe_message[max_length:]
-
-        # Try to break at a space if there's more to send
-        if safe_message and ' ' in chunk:
-            last_space = chunk.rfind(' ')
-            if last_space > max_length // 2:  # Only break if space is in latter half
-                safe_message = chunk[last_space+1:] + safe_message
-                chunk = chunk[:last_space]
-
+    for chunk in chunks:
         responses.append(send_command(f'tellraw @a {{"text":"[Jarvis] {chunk}"}}'))
 
     return ' | '.join(responses) if responses else ''

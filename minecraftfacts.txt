@@ -1,0 +1,89 @@
+Placing a torch under falling sand/gravel instantly converts the blocks to items
+Foxes can pick up items and will hold enchanted swords, effectively fighting for you
+Boats can be placed on ice for incredibly fast travel (blue ice is fastest)
+Name a mob "Dinnerbone" or "Grumm" to flip it upside down
+Name a sheep "jeb_" to make its wool cycle through rainbow colors
+Parrots imitate nearby hostile mob sounds—useful as an early warning system
+Snow golems leave a snow trail and can farm snow infinitely in cold biomes
+Dolphins give you a speed boost when swimming near them
+Bees remember if you've attacked them even after relogging
+Placing soul sand under water creates a bubble column that pulls you down; magma blocks push you up
+Composters can be used to change villager professions to farmer
+Endermen can't teleport onto bottom-half slabs
+You can place rails on half slabs for hidden minecart systems
+Riptide tridents work in rain, not just water
+Hitting a jukebox with a hopper pulls out the disc
+Observers detect block updates including crop growth stages
+Dispensers can shear sheep, plant seeds, and fill/empty buckets
+Comparators can read item frame rotation values (16 signal strengths)
+Sticky pistons release blocks if given a 1-tick pulse
+Honey blocks don't stick to slime blocks, allowing complex flying machines
+Target blocks output different redstone signals based on where an arrow hits
+Lecterns with books output comparator signals based on page number
+Cake can be eaten by comparator to give diminishing signals (edible redstone!)
+Trapped chests output redstone based on how many players have them open
+Daylight sensors can be inverted by right-clicking
+Axes disable shields for 5 seconds when they hit
+Shields block 100% of explosion damage when facing the blast
+Sweeping Edge enchantment affects the knockback of sweep attacks
+Crouching reduces fall damage from ender pearls
+You can MLG with a hay bale (reduces fall damage by 80%)
+Powder snow can be used to negate fall damage if you land in it
+Totems of Undying work from your off-hand
+Endermen won't aggro if you wear a carved pumpkin
+Striders take damage from water and rain
+Wardens are blind—they track by sound and smell
+Sculk sensors can be blocked by wool
+Soul speed boots drain durability only on soul sand/soil
+Fire Resistance makes you immune to blaze melee attacks
+Stairs placed upside-down create nice ceiling details
+Trapdoors attached to walls make excellent shelf decorations
+Campfires cook food without fuel and can be silenced with a hay bale underneath
+Smokers and blast furnaces are 2x faster but only work on their respective items
+Item frames on the sides of chests label them without blocking opening
+Moss blocks spread with bone meal, making them great for terraforming
+Glow lichen spreads with bone meal and provides dim light
+Pointed dripstone under a water source slowly fills cauldrons
+Lava cauldrons can also be filled via dripstone (renewable lava!)
+Amethyst buds grow faster with bone meal (Bedrock only)
+Dead coral fans make nice decorative details for builds
+Scaffolding falls in a column when you break the bottom
+Piglins barter better when you throw gold rather than right-click
+Crying obsidian can anchor your respawn in the Nether
+Striders are the only passive Nether mob and can be ridden with warped fungus
+Hoglins flee from warped fungus and nether portals
+Nether fortress spawning is based on invisible bounding boxes, not the visible structure
+Ghast tears and blaze rods can't be farmed with looting—kill count matters more
+Blackstone works identically to cobblestone in recipes
+Gold armor makes piglins neutral (even just boots)
+Nether portals link based on coordinates divided by 8 on the X and Z axes
+Bastion remnants have different loot depending on their type (housing, stables, treasure, bridge)
+Ender chests have only 27 slots shared across all your ender chests
+Shulker boxes inside ender chests massively expand portable storage
+End crystals on obsidian respawn the dragon (four around the exit portal)
+Dragon's breath can be collected in bottles for lingering potions
+Elytra durability is restored with phantom membranes
+Mending is the best enchantment for elytra longevity
+End gateway portals teleport you to outer end islands
+Chorus fruit teleports you randomly when eaten (can escape traps)
+Endermites have a 5% spawn chance from ender pearl use
+F3+H shows item durability and other advanced tooltips
+F3+B shows entity hitboxes
+F3+G shows chunk boundaries (critical for mob spawning/farms)
+Holding Ctrl while scrolling your hotbar jumps to the ends
+Middle-click copies a block you're looking at into your hand (creative or with item)
+Double-tapping a slot while holding items quickly moves all of that item type
+Shift+clicking a crafting output crafts maximum possible
+Using F3+C for 10 seconds force-crashes your game (not recommended, but useful for debugging)
+Spectator mode lets you see through mob perspectives
+Coordinates are visible in Bedrock settings without F3
+Always carry a water bucket—it's the best fall-damage prevention
+Torches on the right wall going in = left wall going out (never get lost in caves)
+Sleeping resets phantom spawn timers
+Fortune III on a diamond pickaxe massively increases ore yield
+Silk Touch lets you pick up spawners (Bedrock only) and other special blocks
+Villager trading is the most reliable source of enchanted books
+Iron golems spawn in villages with enough beds and villagers—farm them for iron
+Creepers drop music discs when killed by skeletons
+The "Too Expensive" anvil cap is 40 levels—order your enchantments carefully
+Curing zombie villagers twice gives massive trade discounts
