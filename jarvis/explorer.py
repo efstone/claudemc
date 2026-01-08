@@ -148,8 +148,19 @@ def try_give_explorer_reward(
         chest_y = max(1, min(255, current_pos.y + offset_y))  # Keep within world bounds
         chest_z = current_pos.z + offset_z
 
-        # Place a chest and fill it with loot
-        send_command_threadsafe(f'setblock {chest_x} {chest_y} {chest_z} minecraft:chest replace')
+        # Place a chest and verify it worked (fails silently if chunk not loaded)
+        setblock_response = send_command_threadsafe(f'setblock {chest_x} {chest_y} {chest_z} minecraft:chest replace')
+
+        # Check if setblock succeeded - Minecraft returns "Changed the block at X, Y, Z" on success
+        if 'changed' not in setblock_response.lower():
+            return ExplorerRewardResult(
+                player=player.username,
+                success=False,
+                reason=f"Failed to place chest (chunk not loaded?): {setblock_response}",
+                distance_from_nearest_location=dist_from_location,
+                distance_from_login=dist_from_login
+            )
+
         send_command_threadsafe(f'loot insert {chest_x} {chest_y} {chest_z} loot {loot_table}')
 
         # Tell the player where to find it
