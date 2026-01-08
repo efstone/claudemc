@@ -409,6 +409,7 @@ def chat(username: str, message: str) -> ClaudeResponse:
         max_tokens=1024,
         system=build_system_prompt(include_locations=include_locations),
         tools=MINECRAFT_TOOLS + [WEB_SEARCH_TOOL],
+        tool_choice={"type": "any"},  # Force Claude to always use at least one tool (say)
         messages=messages
     )
 
