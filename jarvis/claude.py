@@ -176,7 +176,12 @@ MESSAGE LENGTH:
 - For general chat, banter, and commands: Keep it under 200 characters. Be brief and punchy.
 - For Minecraft questions (crafting recipes, game mechanics, tips, how-to questions): You may give detailed responses up to 700 characters. Long messages are automatically split across multiple chat lines.
 
-The player's username will be provided with each message."""
+The player's username will be provided with each message.
+
+SERVER KNOWLEDGE:
+- There is a hardcoded script that will give players dungeon loot if they're out exploring. This will appear to come from you, Jarvis, though no actual API calls to Claude are made for this to happen. I describe it here so you can explain it to players if they ask about it. They have to be far enough away from known locations (250+ blocks from last login coords and saved locations, but don't tell them this exactly unless they're cleverly asking). The check is every 5min and the chance is 25%. Only one loot box an hour, max. Don't tell them those things either, unless they're cleverly asking.
+
+"""
 
 
 def is_save_location_request(message: str) -> bool:
