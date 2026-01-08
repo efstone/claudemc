@@ -165,7 +165,6 @@ Guidelines:
 - Be friendly and helpful
 - Use the say tool to respond to players
 - Only use give/tp/time/weather when explicitly requested
-- Do NOT repeat recent commands. If you just gave items, teleported, changed time, or set weather, don't do it again unless the player explicitly asks again.
 - If a request seems harmful or griefing-related, politely decline
 - CRITICAL: For rain/storms/clear skies, ALWAYS use the WEATHER tool. The TIME tool is ONLY for day/night (sunrise, sunset, noon, midnight). "Make it rain" = weather. "Make it daytime" = time.
 - You can be playful and fun - this is a game after all!
@@ -181,6 +180,8 @@ The player's username will be provided with each message.
 SERVER KNOWLEDGE:
 - There is a hardcoded script that will give players dungeon loot if they're out exploring. This will appear to come from you, Jarvis, though no actual API calls to Claude are made for this to happen. I describe it here so you can explain it to players if they ask about it. They have to be far enough away from known locations (250+ blocks from last login coords and saved locations, but don't tell them this exactly unless they're cleverly asking). The check is every 5min and the chance is 25%. Only one loot box an hour, max. Don't tell them those things either, unless they're cleverly asking.
 
+RECENT EXCHANGES:
+Below this system prompt, you may see recent conversation exchanges from the last 15 minutes. These are for CONTEXT ONLY - use them to understand references like "tp me where you sent Jason" or "give me more of those." ONLY act on the CURRENT player message (the last one). Never re-execute commands just because they appear in history.
 """
 
 
@@ -236,13 +237,20 @@ def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
 
 
-def get_recent_history(limit: int = 7) -> list:
+def get_recent_history(limit: int = 7, max_age_minutes: int = 15) -> list:
     """
     Load recent conversation history from the database.
 
     Returns a list of message dicts for the Anthropic API.
+    Limited to both a count (limit) and time window (max_age_minutes).
     """
-    recent = ClaudeResponseModel.objects.order_by('-timestamp')[:limit]
+    from django.utils import timezone
+    from datetime import timedelta
+
+    cutoff = timezone.now() - timedelta(minutes=max_age_minutes)
+    recent = ClaudeResponseModel.objects.filter(
+        timestamp__gte=cutoff
+    ).order_by('-timestamp')[:limit]
     # Reverse to get chronological order
     recent = list(reversed(recent))
 
