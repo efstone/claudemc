@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'jarvis',
+    'metaboop',
 ]
 
 MIDDLEWARE = [
@@ -94,7 +95,16 @@ DATABASES = {
         'PASSWORD': os.getenv('PROD_DB_PASSWORD'),
         'HOST': os.getenv('PROD_DB_HOST'),
     },
+    'metaboop': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': os.getenv('METABOOP_DB_NAME'),
+        'USER': os.getenv('METABOOP_DB_USER'),
+        'PASSWORD': os.getenv('METABOOP_DB_PASSWORD'),
+        'HOST': os.getenv('METABOOP_DB_HOST'),
+    },
 }
+
+DATABASE_ROUTERS = ['metaboop.routers.MetaboopRouter']
 
 
 # Password validation
