@@ -24,10 +24,12 @@ class ChatMessage:
 
 
 # Pattern for chat messages: [HH:MM:SS] [Async Chat Thread - #N/INFO]: <username> message
+# Bedrock players show as: [HH:MM:SS] [Async Chat Thread - #N/INFO]: [Not Secure] <.username> message
 CHAT_PATTERN = re.compile(
     r'^\[(\d{2}:\d{2}:\d{2})\] '  # timestamp
     r'\[Async Chat Thread - #\d+/INFO\]: '  # thread info
-    r'<(\w+)> '  # username
+    r'(?:\[Not Secure\] )?'  # optional [Not Secure] prefix for Bedrock
+    r'<([\w.]+)> '  # username (allowing dots for Bedrock)
     r'(.+)$'  # message content
 )
 
