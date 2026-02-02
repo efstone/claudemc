@@ -46,7 +46,7 @@ class PlayerPosition:
 # Pattern for RCON response: <player> has the following entity data: [...]
 # No timestamp prefix - this is the direct RCON response
 RCON_POSITION_PATTERN = re.compile(
-    r'^(\w+) has the following entity data: '  # username
+    r'^([\w.]+) has the following entity data: '  # username (allowing dots for Bedrock)
     r'\[(.+)\]$'  # coordinate data in brackets
 )
 
@@ -110,7 +110,7 @@ class PlayerLogin:
 LOGIN_PATTERN = re.compile(
     r'^\[(\d{2}:\d{2}:\d{2})\] '  # timestamp
     r'\[Server thread/INFO\]: '  # thread info
-    r'(\w+)\[.+\] logged in with entity id \d+ at '  # username
+    r'([\w.]+)\[.+\] logged in with entity id \d+ at '  # username (allowing dots for Bedrock)
     r'\((-?[\d.]+), (-?[\d.]+), (-?[\d.]+)\)'  # coordinates
 )
 

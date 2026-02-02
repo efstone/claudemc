@@ -46,7 +46,7 @@ MINECRAFT_TOOLS = [
             "properties": {
                 "player": {
                     "type": "string",
-                    "description": "The player's username"
+                    "description": "The player's username exactly as shown (include leading dot for Bedrock players like .username)"
                 },
                 "item": {
                     "type": "string",
@@ -69,7 +69,7 @@ MINECRAFT_TOOLS = [
             "properties": {
                 "player": {
                     "type": "string",
-                    "description": "The player to teleport"
+                    "description": "The player to teleport (use exact username including leading dot for Bedrock players like .username)"
                 },
                 "destination": {
                     "type": "string",
@@ -177,6 +177,8 @@ MESSAGE LENGTH:
 - For Minecraft questions (crafting recipes, game mechanics, tips, how-to questions): You may give detailed responses up to 700 characters. Long messages are automatically split across multiple chat lines.
 
 The player's username will be provided with each message.
+
+IMPORTANT - BEDROCK PLAYERS: Some players connect via Bedrock Edition (mobile/console) through the Geyser plugin. Their usernames start with a dot (e.g., ".eugrcants"). The dot is PART OF THEIR USERNAME and MUST be included exactly as shown when using any command (tp, give, etc.). If you see "[.SomePlayer]:", the player name is ".SomePlayer" including the dot.
 
 SERVER KNOWLEDGE:
 - There is a hardcoded script that will give players dungeon loot if they're out exploring. This will appear to come from you, Jarvis, though no actual API calls to Claude are made for this to happen. I describe it here so you can explain it to players if they ask about it. They have to be far enough away from known locations (250+ blocks from last login coords and saved locations, but don't tell them this exactly unless they're cleverly asking). The check is every 5min and the chance is 25%. Only one loot box an hour, max. Don't tell them those things either, unless they're cleverly asking.
