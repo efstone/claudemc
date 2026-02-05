@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -193,11 +194,14 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f'  -> Duplicate, skipping'))
             return
 
-        # Check if user is in Jarvis group
-        is_jarvis = player.is_jarvis_user()
-        self.stdout.write(f'  -> Jarvis group: {is_jarvis} (user: {player.user})')
-        if not is_jarvis:
-            return
+        # Check if user is in Jarvis group (if enforcement is enabled)
+        if settings.ENFORCE_JARVIS_GROUP:
+            is_jarvis = player.is_jarvis_user()
+            self.stdout.write(f'  -> Jarvis group: {is_jarvis} (user: {player.user})')
+            if not is_jarvis:
+                return
+        else:
+            self.stdout.write(f'  -> Jarvis group enforcement disabled, allowing all players')
 
         # Only respond if message mentions Jarvis
         has_jarvis_mention = 'jarvis' in message.content.lower()

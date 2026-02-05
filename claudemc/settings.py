@@ -29,6 +29,9 @@ RCON_PASSWORD = os.getenv('RCON_PASSWORD', '')
 # Anthropic API
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
 
+# Jarvis group enforcement
+ENFORCE_JARVIS_GROUP = os.getenv('ENFORCE_JARVIS_GROUP', 'True').lower() in ('true', '1', 'yes')
+
 ALLOWED_HOSTS = ['localhost', '192.168.42.123', '127.0.0.1', 'minecraft.aquapony.com', '100.64.107.75']
 
 CSRF_TRUSTED_ORIGINS = [
