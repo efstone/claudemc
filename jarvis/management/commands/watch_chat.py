@@ -23,6 +23,30 @@ from jarvis.rcon import say, give, teleport, set_time, weather, save_player_loca
 from jarvis.tailer import tail_log
 
 
+def normalize_player_name(claude_player: str, requesting_user: str) -> str:
+    """
+    Correct Claude's player argument if it's a mangled version of requesting_user.
+
+    Handles cases where Claude:
+    - Strips the leading dot: ".eugrcants" -> "eugrcants"
+    - Adds a leading dot: "Steve" -> ".Steve"
+    - Gets it right (no change needed)
+    """
+    if not requesting_user:
+        return claude_player
+
+    # Check if Claude's answer matches the requesting user (with or without dot)
+    claude_normalized = claude_player.lstrip('.')
+    user_normalized = requesting_user.lstrip('.')
+
+    if claude_normalized.lower() == user_normalized.lower():
+        # Claude was referring to the requesting user - use the actual username
+        return requesting_user
+
+    # Different player entirely - trust Claude's output
+    return claude_player
+
+
 class Command(BaseCommand):
     help = 'Watch Minecraft server chat in real-time'
 
@@ -266,14 +290,24 @@ class Command(BaseCommand):
                     timestamp=timezone.now()
                 )
             elif tool_call.name == 'give':
-                rcon_result = give(
+                # Correct player name if Claude mangled it
+                player = normalize_player_name(
                     tool_call.arguments['player'],
+                    requesting_user
+                )
+                rcon_result = give(
+                    player,
                     tool_call.arguments['item'],
                     tool_call.arguments.get('amount', 1)
                 )
             elif tool_call.name == 'tp':
-                rcon_result = teleport(
+                # Correct player name if Claude mangled it
+                player = normalize_player_name(
                     tool_call.arguments['player'],
+                    requesting_user
+                )
+                rcon_result = teleport(
+                    player,
                     tool_call.arguments['destination']
                 )
             elif tool_call.name == 'time':
