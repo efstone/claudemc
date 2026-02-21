@@ -73,7 +73,7 @@ MINECRAFT_TOOLS = [
                 },
                 "destination": {
                     "type": "string",
-                    "description": "Destination: either 'x y z' coordinates or another player's name"
+                    "description": "Destination coordinates as 'x y z' (three numbers). When teleporting to a saved location, you MUST use the coordinates from the known locations list, never the location name. To teleport to another player, use their player name instead."
                 },
                 "dimension": {
                     "type": "string",
@@ -219,8 +219,7 @@ def build_system_prompt(include_locations: bool = True, player_dimension: str = 
     if include_locations:
         locations = Location.objects.all()
         if locations:
-            prompt += "\n\nKnown locations you can teleport players to (use fuzzy matching - "
-            prompt += "'lighthouse' matches 'Mine Island: Lighthouse Station'):"
+            prompt += "\n\nKnown locations — when a player asks to go to one, pass the COORDINATES (not the name) to the tp tool:"
             for loc in locations:
                 desc = f" - {loc.description}" if loc.description else ""
                 dim_label = f" [{loc.dimension}]" if loc.dimension != 'overworld' else ""

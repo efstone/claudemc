@@ -6,6 +6,7 @@ Usage:
 """
 
 import random
+import re
 import signal
 import sys
 import threading
@@ -18,7 +19,7 @@ from django.utils import timezone
 from jarvis.claude import chat as claude_chat, random_event_message, clawed_eagle_joke, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.explorer import check_all_players_for_rewards
-from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
+from jarvis.models import ChatMessage, Location, MinecraftPlayer, ClaudeResponse, ToolExecution
 from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, send_command_threadsafe, get_player_dimension, RconError
 from jarvis.tailer import tail_log
 
@@ -350,11 +351,19 @@ class Command(BaseCommand):
                     tool_call.arguments['player'],
                     requesting_user
                 )
+                dest = tool_call.arguments['destination']
                 dimension = tool_call.arguments.get('dimension', 'overworld')
-                self.stdout.write(f'  -> tp dimension: {dimension}, destination: {tool_call.arguments["destination"]}')
+                # If destination isn't coordinates, try resolving as a location name
+                if not re.match(r'^-?\d+\s+-?\d+\s+-?\d+$', dest.strip()):
+                    loc = Location.objects.filter(name__icontains=dest.strip()).first()
+                    if loc:
+                        self.stdout.write(f'  -> Resolved location "{dest}" to {loc.coordinates} [{loc.dimension}]')
+                        dest = loc.coordinates
+                        dimension = loc.dimension
+                self.stdout.write(f'  -> tp dimension: {dimension}, destination: {dest}')
                 rcon_result = teleport(
                     player,
-                    tool_call.arguments['destination'],
+                    dest,
                     dimension=dimension
                 )
             elif tool_call.name == 'time':
