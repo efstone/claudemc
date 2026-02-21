@@ -39,7 +39,8 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'x', 'y', 'z', 'description', 'screenshot_thumbnail')
+    list_display = ('name', 'x', 'y', 'z', 'dimension', 'description', 'screenshot_thumbnail')
+    list_filter = ('dimension',)
     search_fields = ('name', 'description')
     ordering = ('name',)
 

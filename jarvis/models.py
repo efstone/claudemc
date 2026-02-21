@@ -71,6 +71,7 @@ class Location(models.Model):
     x = models.IntegerField()
     y = models.IntegerField()
     z = models.IntegerField()
+    dimension = models.CharField(max_length=20, default='overworld')
     description = models.CharField(max_length=300, blank=True)  # Optional description
     screenshot = models.ImageField(upload_to='location_screenshots/', blank=True, null=True)
 
@@ -84,6 +85,14 @@ class Location(models.Model):
     def coordinates(self) -> str:
         """Return coordinates as a string for RCON."""
         return f"{self.x} {self.y} {self.z}"
+
+    @property
+    def display_coordinates(self) -> str:
+        """Return coordinates with dimension label for non-overworld locations."""
+        coords = f"{self.x} {self.y} {self.z}"
+        if self.dimension != 'overworld':
+            coords += f" [{self.dimension}]"
+        return coords
 
 
 class ClaudeResponse(models.Model):

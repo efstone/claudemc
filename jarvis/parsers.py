@@ -148,6 +148,47 @@ def parse_login(line: str, log_date: Optional[date] = None) -> Optional[PlayerLo
     )
 
 
+@dataclass
+class PlayerDimension:
+    """Parsed player dimension."""
+    username: str
+    dimension: str  # e.g., 'overworld', 'the_nether', 'the_end'
+
+
+# Pattern for RCON dimension response: <player> has the following entity data: "minecraft:overworld"
+# Note: dimension uses quotes "..." while position uses brackets [...]
+RCON_DIMENSION_PATTERN = re.compile(
+    r'^([\w.]+) has the following entity data: '  # username (allowing dots for Bedrock)
+    r'"minecraft:([\w_]+)"$'  # dimension in quotes
+)
+
+
+def parse_dimension_from_rcon(response: str) -> Optional[PlayerDimension]:
+    """
+    Parse player dimension from an RCON response.
+
+    The RCON response looks like:
+    username has the following entity data: "minecraft:overworld"
+
+    Args:
+        response: The RCON response string from 'data get entity <player> Dimension'.
+
+    Returns:
+        PlayerDimension if the response contains dimension data, None otherwise.
+    """
+    # Strip RCON color codes for safety
+    cleaned = re.sub(r'§[0-9a-fk-or]', '', response.strip())
+    # Also strip the ;Xm style codes seen in position responses
+    cleaned = re.sub(r';[0-9]+m?', '', cleaned)
+
+    match = RCON_DIMENSION_PATTERN.match(cleaned)
+    if not match:
+        return None
+
+    username, dimension = match.groups()
+    return PlayerDimension(username=username, dimension=dimension)
+
+
 def parse_chat(line: str, log_date: Optional[date] = None) -> Optional[ChatMessage]:
     """
     Parse a chat message from a log line.

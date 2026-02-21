@@ -7,7 +7,7 @@ Only whitelisted commands can be executed.
 import re
 
 # Commands that Claude is allowed to execute
-ALLOWED_COMMANDS = {'say', 'tellraw', 'give', 'tp', 'time', 'weather', 'data', 'list', 'loot', 'setblock'}
+ALLOWED_COMMANDS = {'say', 'tellraw', 'give', 'tp', 'time', 'weather', 'data', 'list', 'loot', 'setblock', 'execute'}
 
 
 class CommandNotAllowedError(Exception):
