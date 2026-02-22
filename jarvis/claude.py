@@ -73,7 +73,12 @@ MINECRAFT_TOOLS = [
                 },
                 "destination": {
                     "type": "string",
-                    "description": "Destination: either 'x y z' coordinates or another player's name"
+                    "description": "Destination coordinates as 'x y z' (three numbers). When teleporting to a saved location, you MUST use the coordinates from the known locations list, never the location name. To teleport to another player, use their player name instead."
+                },
+                "dimension": {
+                    "type": "string",
+                    "description": "The dimension to teleport in. Use the location's listed dimension for saved locations, or the player's current dimension for freeform coordinates. Defaults to overworld.",
+                    "enum": ["overworld", "the_nether", "the_end"]
                 }
             },
             "required": ["player", "destination"]
@@ -166,6 +171,7 @@ Guidelines:
 - Use the say tool to respond to players
 - Only use give/tp/time/weather when explicitly requested
 - When a player asks to be teleported to a location, ALWAYS execute the teleport - even if they appear to already be there. Never refuse or question a teleport request.
+- DIMENSION-AWARE TELEPORTING: When teleporting to a saved location, use that location's listed dimension. When teleporting to freeform coordinates, use the player's current dimension (shown below). When teleporting to another player, omit the dimension parameter (cross-dimension tp is handled automatically).
 - If a request seems harmful or griefing-related, politely decline
 - CRITICAL: For rain/storms/clear skies, ALWAYS use the WEATHER tool. The TIME tool is ONLY for day/night (sunrise, sunset, noon, midnight). "Make it rain" = weather. "Make it daytime" = time.
 - You can be playful and fun - this is a game after all!
@@ -203,18 +209,21 @@ def is_save_location_request(message: str) -> bool:
     return has_save_word and has_location_word
 
 
-def build_system_prompt(include_locations: bool = True) -> str:
+def build_system_prompt(include_locations: bool = True, player_dimension: str = None) -> str:
     """Build the system prompt with current locations from database."""
     prompt = SYSTEM_PROMPT_BASE
+
+    if player_dimension:
+        prompt += f"\n\nCURRENT PLAYER DIMENSION: minecraft:{player_dimension}"
 
     if include_locations:
         locations = Location.objects.all()
         if locations:
-            prompt += "\n\nKnown locations you can teleport players to (use fuzzy matching - "
-            prompt += "'lighthouse' matches 'Mine Island: Lighthouse Station'):"
+            prompt += "\n\nKnown locations — when a player asks to go to one, pass the COORDINATES (not the name) to the tp tool:"
             for loc in locations:
                 desc = f" - {loc.description}" if loc.description else ""
-                prompt += f"\n- {loc.name}: {loc.coordinates}{desc}"
+                dim_label = f" [{loc.dimension}]" if loc.dimension != 'overworld' else ""
+                prompt += f"\n- {loc.name}: {loc.coordinates}{dim_label}{desc}"
 
     return prompt
 
@@ -392,7 +401,7 @@ def clawed_eagle_joke() -> Optional[str]:
     return generate_random_message(CLAWED_EAGLE_JOKE_PROMPT)
 
 
-def chat(username: str, message: str) -> ClaudeResponse:
+def chat(username: str, message: str, player_dimension: str = None) -> ClaudeResponse:
     """
     Send a chat message to Claude and get a response.
 
@@ -401,6 +410,7 @@ def chat(username: str, message: str) -> ClaudeResponse:
     Args:
         username: The Minecraft player's username.
         message: The chat message from the player.
+        player_dimension: The player's current dimension (e.g., 'overworld', 'the_nether', 'the_end').
 
     Returns:
         ClaudeResponse with text and any tool calls.
@@ -421,7 +431,7 @@ def chat(username: str, message: str) -> ClaudeResponse:
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
-        system=build_system_prompt(include_locations=include_locations),
+        system=build_system_prompt(include_locations=include_locations, player_dimension=player_dimension),
         tools=MINECRAFT_TOOLS + [WEB_SEARCH_TOOL],
         tool_choice={"type": "any"},  # Force Claude to always use at least one tool (say)
         messages=messages

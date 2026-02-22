@@ -2,6 +2,7 @@
 RCON client for communicating with the Minecraft server.
 """
 
+import re
 from dataclasses import dataclass
 from typing import Optional
 
@@ -10,7 +11,7 @@ from mcrcon import MCRcon
 from django.conf import settings
 
 from .commands import validate_command, CommandNotAllowedError
-from .parsers import parse_position_from_rcon, PlayerPosition
+from .parsers import parse_position_from_rcon, parse_dimension_from_rcon, PlayerPosition
 
 
 class RconError(Exception):
@@ -108,9 +109,26 @@ def give(player: str, item: str, amount: int = 1) -> str:
     return send_command(f'give {player} {item} {amount}')
 
 
-def teleport(player: str, destination: str) -> str:
-    """Teleport a player to a destination (coordinates or another player)."""
-    return send_command(f'tp {player} {destination}')
+# Regex to detect coordinate destinations (e.g., "100 64 -200", "-50 70 300")
+_COORDINATE_PATTERN = re.compile(r'^-?\d+\s+-?\d+\s+-?\d+$')
+
+
+def teleport(player: str, destination: str, dimension: str = 'overworld') -> str:
+    """
+    Teleport a player to a destination (coordinates or another player).
+
+    For coordinate destinations, uses 'execute as <player> in minecraft:<dimension> run teleport'
+    to ensure the teleport lands in the correct dimension.
+    For player-name destinations, uses plain 'tp' since Minecraft handles cross-dimension natively.
+    """
+    if _COORDINATE_PATTERN.match(destination.strip()):
+        # Coordinate teleport — use execute to target the correct dimension
+        return send_command(
+            f'execute as {player} in minecraft:{dimension} run teleport {player} {destination}'
+        )
+    else:
+        # Player-to-player teleport — plain tp handles cross-dimension
+        return send_command(f'tp {player} {destination}')
 
 def set_time(action: str, value: str) -> str:
     """Set or query the world time (day/night or numerical value)."""
@@ -167,6 +185,29 @@ def get_player_position(player: str) -> Optional[PlayerPosition]:
 
         return position
 
+    except RconError:
+        return None
+
+
+def get_player_dimension(player: str) -> Optional[str]:
+    """
+    Get a player's current dimension by querying entity data via RCON.
+
+    Sends 'data get entity <player> Dimension' and parses the response.
+
+    Args:
+        player: The player's username.
+
+    Returns:
+        Dimension string (e.g., 'overworld', 'the_nether', 'the_end') if found, None otherwise.
+    """
+    try:
+        response = send_command(f'data get entity {player} Dimension')
+        result = parse_dimension_from_rcon(response)
+        if result is None:
+            print(f"  -> DEBUG: Failed to parse dimension from response: {repr(response)}")
+            return None
+        return result.dimension
     except RconError:
         return None
 
@@ -353,6 +394,9 @@ def save_player_location(
             say(error_msg)
             return SaveLocationResult(success=False, message=error_msg)
 
+    # Query player's current dimension
+    dimension = get_player_dimension(player) or 'overworld'
+
     # Create the location
     try:
         location = Location.objects.create(
@@ -360,15 +404,17 @@ def save_player_location(
             x=position.x,
             y=position.y,
             z=position.z,
+            dimension=dimension,
             description=description or ''
         )
 
         # Build success message
         coords_str = f"{position.x} {position.y} {position.z}"
+        dim_label = f" in {dimension}" if dimension != 'overworld' else ""
         if description:
-            success_msg = f"Saved location '{name}' at {coords_str}. Description: {description}"
+            success_msg = f"Saved location '{name}' at {coords_str}{dim_label}. Description: {description}"
         else:
-            success_msg = f"Saved location '{name}' at {coords_str}!"
+            success_msg = f"Saved location '{name}' at {coords_str}{dim_label}!"
 
         say(success_msg)
         return SaveLocationResult(

@@ -44,6 +44,7 @@
             width: 100%;
             height: 200px;
             object-fit: cover;
+            cursor: pointer;
         }
         .location-info {
             padding: 1rem;
@@ -58,6 +59,36 @@
             font-family: 'Courier New', monospace;
             color: #6272a4;
             font-size: 0.9rem;
+        }
+        .location-dimension {
+            display: inline-block;
+            margin-top: 0.4rem;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            border-radius: 4px;
+            background: rgba(255, 85, 85, 0.15);
+            color: #ff6e6e;
+        }
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.85);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .lightbox.active {
+            display: flex;
+        }
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
         }
         .empty-message {
             text-align: center;
@@ -77,6 +108,9 @@
             <div class="location-info">
                 <div class="location-name">{{ location.name }}</div>
                 <div class="location-coords">{{ location.x }}, {{ location.y }}, {{ location.z }}</div>
+                {% if location.dimension != 'overworld' %}
+                <div class="location-dimension">{{ location.dimension }}</div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -84,5 +118,23 @@
     {% else %}
     <p class="empty-message">No landmarks with screenshots yet.</p>
     {% endif %}
+    <div class="lightbox" id="lightbox">
+        <img src="" alt="">
+    </div>
+    <script>
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = lightbox.querySelector('img');
+        document.querySelectorAll('.location-card img').forEach(img => {
+            img.addEventListener('click', () => {
+                lightboxImg.src = img.src;
+                lightboxImg.alt = img.alt;
+                lightbox.classList.add('active');
+            });
+        });
+        lightbox.addEventListener('click', () => lightbox.classList.remove('active'));
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') lightbox.classList.remove('active');
+        });
+    </script>
 </body>
 </html>

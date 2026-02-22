@@ -6,6 +6,7 @@ Usage:
 """
 
 import random
+import re
 import signal
 import sys
 import threading
@@ -18,8 +19,8 @@ from django.utils import timezone
 from jarvis.claude import chat as claude_chat, random_event_message, clawed_eagle_joke, ToolCall
 from jarvis.commands import CommandNotAllowedError
 from jarvis.explorer import check_all_players_for_rewards
-from jarvis.models import ChatMessage, MinecraftPlayer, ClaudeResponse, ToolExecution
-from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, send_command_threadsafe, RconError
+from jarvis.models import ChatMessage, Location, MinecraftPlayer, ClaudeResponse, ToolExecution
+from jarvis.rcon import say, give, teleport, set_time, weather, save_player_location, get_online_players, send_command_threadsafe, get_player_dimension, RconError
 from jarvis.tailer import tail_log
 
 
@@ -45,6 +46,26 @@ def normalize_player_name(claude_player: str, requesting_user: str) -> str:
 
     # Different player entirely - trust Claude's output
     return claude_player
+
+
+VALID_DIMENSIONS = {'overworld', 'the_nether', 'the_end'}
+
+
+def validate_tp_args(arguments: dict) -> str | None:
+    """
+    Validate tp tool call arguments.
+
+    Returns None if valid, or an error message string if invalid.
+    """
+    dimension = arguments.get('dimension', 'overworld')
+    if dimension not in VALID_DIMENSIONS:
+        return f"Invalid dimension '{dimension}'. Must be one of: {', '.join(sorted(VALID_DIMENSIONS))}"
+
+    destination = arguments.get('destination', '')
+    if not destination.strip():
+        return "Empty destination"
+
+    return None
 
 
 class Command(BaseCommand):
@@ -233,15 +254,39 @@ class Command(BaseCommand):
         if not has_jarvis_mention:
             return
 
+        # Query player dimension before Claude call
+        player_dimension = get_player_dimension(message.username)
+        if player_dimension:
+            self.stdout.write(self.style.HTTP_INFO(f'  -> Player dimension: minecraft:{player_dimension}'))
+        else:
+            player_dimension = 'overworld'
+            self.stdout.write(self.style.WARNING(f'  -> Could not query dimension, defaulting to overworld'))
+
         # Send to Claude and process response
         self.stdout.write(self.style.HTTP_INFO(f'  -> Sending to Claude...'))
 
         try:
-            response = claude_chat(message.username, message.content)
+            response = claude_chat(message.username, message.content, player_dimension=player_dimension)
 
             # Log Claude's response
             self.stdout.write(self.style.HTTP_INFO(f'  -> Claude text: {response.text}'))
             self.stdout.write(self.style.HTTP_INFO(f'  -> Claude tools: {len(response.tool_calls)} call(s)'))
+
+            # Validate tp tool calls — retry once if invalid
+            tp_error = None
+            for tool_call in response.tool_calls:
+                if tool_call.name == 'tp':
+                    tp_error = validate_tp_args(tool_call.arguments)
+                    if tp_error:
+                        self.stderr.write(self.style.ERROR(f'  -> tp validation failed: {tp_error}'))
+                        break
+
+            if tp_error:
+                # Retry once with error context
+                self.stdout.write(self.style.WARNING(f'  -> Retrying Claude with error context...'))
+                retry_message = f"{message.content} [SYSTEM: Your previous tp call was invalid: {tp_error}. Please fix the dimension parameter.]"
+                response = claude_chat(message.username, retry_message, player_dimension=player_dimension)
+                self.stdout.write(self.style.HTTP_INFO(f'  -> Retry Claude tools: {len(response.tool_calls)} call(s)'))
 
             # Save Claude's response to database
             claude_response = ClaudeResponse.objects.create(
@@ -306,9 +351,20 @@ class Command(BaseCommand):
                     tool_call.arguments['player'],
                     requesting_user
                 )
+                dest = tool_call.arguments['destination']
+                dimension = tool_call.arguments.get('dimension', 'overworld')
+                # If destination isn't coordinates, try resolving as a location name
+                if not re.match(r'^-?\d+\s+-?\d+\s+-?\d+$', dest.strip()):
+                    loc = Location.objects.filter(name__icontains=dest.strip()).first()
+                    if loc:
+                        self.stdout.write(f'  -> Resolved location "{dest}" to {loc.coordinates} [{loc.dimension}]')
+                        dest = loc.coordinates
+                        dimension = loc.dimension
+                self.stdout.write(f'  -> tp dimension: {dimension}, destination: {dest}')
                 rcon_result = teleport(
                     player,
-                    tool_call.arguments['destination']
+                    dest,
+                    dimension=dimension
                 )
             elif tool_call.name == 'time':
                 rcon_result = set_time(
