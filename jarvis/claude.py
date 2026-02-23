@@ -17,7 +17,7 @@ from .models import Location, ClaudeResponse as ClaudeResponseModel
 
 # Web search tool
 WEB_SEARCH_TOOL = {
-    "type": "web_search_20250305",
+    "type": "web_search_20260209",
     "name": "web_search",
     "max_uses": 3
 }
@@ -357,8 +357,8 @@ def generate_random_message(system_prompt: str) -> Optional[str]:
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=256,
+            model="claude-sonnet-4-6",
+            max_tokens=512,
             messages=[{"role": "user", "content": "Generate a message."}],
             system=system_prompt
         )
@@ -429,8 +429,8 @@ def chat(username: str, message: str, player_dimension: str = None) -> ClaudeRes
     include_locations = not is_save_location_request(message)
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1024,
+        model="claude-sonnet-4-6",
+        max_tokens=2048,
         system=build_system_prompt(include_locations=include_locations, player_dimension=player_dimension),
         tools=MINECRAFT_TOOLS + [WEB_SEARCH_TOOL],
         tool_choice={"type": "any"},  # Force Claude to always use at least one tool (say)

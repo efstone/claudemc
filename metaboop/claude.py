@@ -102,7 +102,7 @@ def analyze_image(image_path: str, is_minecraft: bool = False) -> AnalysisResult
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=1024,
             messages=[
                 {
